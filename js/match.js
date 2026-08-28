@@ -1,4 +1,7 @@
 // ===== Interactive match orchestration =====
+// The match plays as a live text log. The pitch is never shown in full —
+// only when a moment involves the player's own player does the view zoom
+// in close (aim/dribble/timing overlays) and hand control to the user.
 
 function samplePoisson(lambda){
   const L = Math.exp(-lambda);
@@ -12,42 +15,12 @@ function ratingGoalExpectation(a, b){
 }
 
 const MatchController = {
-  renderer:null,
-
-  buildFormation(homeClub, awayClub, myIsHome, playerPos){
-    const W=900,H=560;
-    const home = [
-      {slot:"GK", x:450, y:55},
-      {slot:"DEF", x:300, y:160}, {slot:"DEF", x:600, y:160},
-      {slot:"MID", x:300, y:270}, {slot:"MID", x:600, y:270},
-      {slot:"FWD", x:450, y:400},
-    ];
-    const away = [
-      {slot:"GK", x:450, y:505},
-      {slot:"DEF", x:300, y:400}, {slot:"DEF", x:600, y:400},
-      {slot:"MID", x:300, y:300}, {slot:"MID", x:600, y:300},
-      {slot:"FWD", x:450, y:160},
-    ];
-    const heroTeamArr = myIsHome ? home : away;
-    const heroSlotIdx = heroTeamArr.findIndex(s=>s.slot===playerPos);
-    const players = [];
-    home.forEach((s,i)=>{
-      players.push({x:s.x,y:s.y,tx:s.x,ty:s.y,color:homeClub.primary,secondary:homeClub.secondary,
-        hero: myIsHome && i===heroSlotIdx, number:i+2, team:"home"});
-    });
-    away.forEach((s,i)=>{
-      players.push({x:s.x,y:s.y,tx:s.x,ty:s.y,color:awayClub.primary,secondary:awayClub.secondary,
-        hero: !myIsHome && i===heroSlotIdx, number:i+2, team:"away"});
-    });
-    return players;
-  },
-
   weightsForPosition(pos){
     switch(pos){
-      case "FWD": return {shoot:.55, pass:.25, defend:.20, save:0};
-      case "MID": return {shoot:.30, pass:.40, defend:.30, save:0};
-      case "DEF": return {shoot:.10, pass:.25, defend:.65, save:0};
-      case "GK":  return {shoot:0, pass:.20, defend:0, save:.80};
+      case "FWD": return {shoot:.40, pass:.20, dribble:.25, defend:.15, save:0};
+      case "MID": return {shoot:.20, pass:.30, dribble:.20, defend:.30, save:0};
+      case "DEF": return {shoot:.05, pass:.20, dribble:.10, defend:.65, save:0};
+      case "GK":  return {shoot:0, pass:.20, dribble:0, defend:0, save:.80};
     }
   },
 
@@ -81,17 +54,14 @@ const MatchController = {
     $("#match-score").textContent = "0 - 0";
     $("#match-score").classList.remove("bump");
     $("#match-minute").textContent = "0";
-    $("#match-commentary").textContent = `הקהל מתמלא באצטדיון... עומדים להתחיל!`;
-    $("#match-commentary").classList.remove("pulse");
     $("#match-end-overlay").classList.add("hidden");
     $("#minigame-overlay").classList.add("hidden");
-    $("#goal-burst").classList.add("hidden");
-    $("#goal-burst").classList.remove("show");
+    $("#goal-toast").classList.add("hidden");
+    $("#goal-toast").classList.remove("show");
 
-    const canvas = $("#pitch-canvas");
-    this.renderer = new PitchRenderer(canvas);
-    this.renderer.setPlayers(this.buildFormation(homeClub, awayClub, myIsHome, p.position));
-    this.renderer.start();
+    const log = $("#match-log");
+    log.innerHTML = "";
+    this._logEvent("הקהל מתמלא באצטדיון... עומדים להתחיל!");
 
     showScreen("screen-match");
 
@@ -158,12 +128,15 @@ const MatchController = {
     }, Math.max(12, 260/steps));
   },
 
-  _commentate(text){
-    const el = $("#match-commentary");
-    el.textContent = text;
-    el.classList.remove("pulse");
-    void el.offsetWidth; // restart the animation even if the class was still present
-    el.classList.add("pulse");
+  _logEvent(text, opts={}){
+    const log = $("#match-log");
+    const entry = document.createElement("div");
+    entry.className = "log-entry";
+    if(opts.goal) entry.classList.add("goal");
+    if(opts.key) entry.classList.add("key");
+    entry.textContent = text;
+    log.appendChild(entry);
+    log.scrollTop = log.scrollHeight;
   },
 
   _goalScored(side){
@@ -175,24 +148,20 @@ const MatchController = {
     void scoreEl.offsetWidth;
     scoreEl.classList.add("bump");
 
-    const burst = $("#goal-burst");
-    burst.classList.remove("hidden", "show");
-    void burst.offsetWidth;
-    burst.classList.add("show");
-    setTimeout(()=> burst.classList.add("hidden"), 1300);
-
-    const goalX = 450, goalY = side==="home" ? 540 : 30; // scored at opponent's goal
-    this.renderer.moveBall(goalX, goalY, 0, 0.5);
-    setTimeout(()=> this.renderer.celebrate(goalX, goalY), 500);
+    const toast = $("#goal-toast");
+    toast.classList.remove("hidden", "show");
+    void toast.offsetWidth;
+    toast.classList.add("show");
+    setTimeout(()=> toast.classList.add("hidden"), 1300);
   },
 
   _resolveBackground(ev){
     const ctx = this.ctx;
     const scoringClub = ev.side==="home" ? ctx.homeClub : ctx.awayClub;
     const isMyTeamScoring = (ev.side==="home")===ctx.myIsHome;
-    this._commentate(`⚽ ${ctx.minute}' — גול ל${scoringClub.name}! ${isMyTeamScoring ? "הקבוצה שלך מתקדמת!" : "מכה קשה מהיריבה."}`);
+    this._logEvent(`⚽ ${ctx.minute}' — גול ל${scoringClub.name}! ${isMyTeamScoring ? "הקבוצה שלך מתקדמת!" : "מכה קשה מהיריבה."}`, {goal:true});
     this._goalScored(ev.side);
-    setTimeout(()=> this._runNext(), 1300);
+    setTimeout(()=> this._runNext(), 1100);
   },
 
   _resolveKeyMoment(ev){
@@ -200,14 +169,18 @@ const MatchController = {
     const titles = {
       shoot:"הזדמנות סיום! בחר לאן לבעוט",
       pass:"מסירה חדה לרשת! תזמן את המסירה",
+      dribble:"מגן מולך! החלק כדי לעבור אותו",
       defend:"התקפה מסוכנת עלייך להתערב!",
       save:"בעיטה לעברך! בחר לאן לצלול",
     };
+    this._logEvent(`🔥 ${ctx.minute}' — הכדור אצלך! ${titles[ev.type]}`, {key:true});
     $("#minigame-title").textContent = `${ctx.minute}' — ${titles[ev.type]}`;
     $("#minigame-overlay").classList.remove("hidden");
+    $("#timing-mode").classList.add("hidden");
+    $("#aim-mode").classList.add("hidden");
+    $("#dribble-mode").classList.add("hidden");
 
     if(ev.type==="shoot" || ev.type==="save"){
-      $("#timing-mode").classList.add("hidden");
       $("#aim-mode").classList.remove("hidden");
 
       const heroSkill = Career.overall() + p.reputation/4;
@@ -222,8 +195,19 @@ const MatchController = {
         $("#minigame-overlay").classList.add("hidden");
         this._applyKeyResult(ev.type, score);
       });
+    } else if(ev.type==="dribble"){
+      $("#dribble-mode").classList.remove("hidden");
+
+      const heroSkill = Career.overall() + p.reputation/4;
+      const oppClub = ctx.myIsHome ? ctx.awayClub : ctx.homeClub;
+
+      const dribble = new DribbleChallenge($("#dribble-canvas"), $("#dribble-hint"), {attackerSkill:heroSkill, defenderSkill:oppClub.rating});
+      dribble.start((score)=>{
+        dribble.stop();
+        $("#minigame-overlay").classList.add("hidden");
+        this._applyKeyResult(ev.type, score);
+      });
     } else {
-      $("#aim-mode").classList.add("hidden");
       $("#timing-mode").classList.remove("hidden");
 
       const bar = new TimingBar($("#match-timing-track"), $("#match-timing-zone"), $("#match-timing-marker"));
@@ -253,42 +237,51 @@ const MatchController = {
     if(type==="shoot"){
       if(success){
         p.goals++;
-        this._commentate(`🌟 ${ctx.minute}' — ${p.name} כובש בעצמו! שער מדהים!`);
+        this._logEvent(`🌟 ${ctx.minute}' — ${p.name} כובש בעצמו! שער מדהים!`, {goal:true});
         this._goalScored(heroSide);
         p.reputation += 1;
       } else {
-        this._commentate(`${ctx.minute}' — ${p.name} בעט אך ההזדמנות התבזבזה.`);
+        this._logEvent(`${ctx.minute}' — ${p.name} בעט אך ההזדמנות התבזבזה.`);
       }
     } else if(type==="pass"){
       if(success){
         p.assists++;
-        this._commentate(`🎯 ${ctx.minute}' — בישול נהדר של ${p.name}! השער מתקבל!`);
+        this._logEvent(`🎯 ${ctx.minute}' — בישול נהדר של ${p.name}! השער מתקבל!`, {goal:true});
         this._goalScored(heroSide);
         p.reputation += 1;
       } else {
-        this._commentate(`${ctx.minute}' — המסירה של ${p.name} לא הגיעה ליעדה.`);
+        this._logEvent(`${ctx.minute}' — המסירה של ${p.name} לא הגיעה ליעדה.`);
+      }
+    } else if(type==="dribble"){
+      if(success){
+        this._logEvent(`💨 ${ctx.minute}' — ${p.name} עבר את המגן בדריבל מדהים!`);
+      } else {
+        this._logEvent(`${ctx.minute}' — ${p.name} איבד את הכדור בניסיון הדריבל.`);
+        if(Math.random() < 0.3){
+          this._logEvent(`⚽ ${ctx.minute}' — היריבה מנצלת את האיבוד וכובשת בניגוד!`, {goal:true});
+          this._goalScored(oppSide);
+        }
       }
     } else if(type==="defend"){
       if(success){
-        this._commentate(`🛡️ ${ctx.minute}' — התערבות מצוינת של ${p.name} עוצרת התקפה מסוכנת!`);
+        this._logEvent(`🛡️ ${ctx.minute}' — התערבות מצוינת של ${p.name} עוצרת התקפה מסוכנת!`);
       } else {
-        this._commentate(`${ctx.minute}' — ${p.name} איחר להתערב, וזה עולה ביוקר.`);
+        this._logEvent(`${ctx.minute}' — ${p.name} איחר להתערב, וזה עולה ביוקר.`, {goal:true});
         this._goalScored(oppSide);
       }
     } else if(type==="save"){
       if(success){
-        this._commentate(`🧤 ${ctx.minute}' — הצלה מדהימה של ${p.name}!`);
+        this._logEvent(`🧤 ${ctx.minute}' — הצלה מדהימה של ${p.name}!`);
       } else {
-        this._commentate(`${ctx.minute}' — ${p.name} לא הצליח להדוף, גול ליריבה.`);
+        this._logEvent(`${ctx.minute}' — ${p.name} לא הצליח להדוף, גול ליריבה.`, {goal:true});
         this._goalScored(oppSide);
       }
     }
-    setTimeout(()=> this._runNext(), 1300);
+    setTimeout(()=> this._runNext(), 1100);
   },
 
   _endMatch(){
     const ctx = this.ctx, p = ctx.p;
-    this.renderer.stop();
 
     Career.recordMyResult(ctx.homeClub.id, ctx.awayClub.id, ctx.score.home, ctx.score.away);
     Career.simulateBackgroundRound(ctx.homeClub.id+"-"+ctx.awayClub.id);

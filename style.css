@@ -304,17 +304,34 @@ body{
 #match-score.bump{animation:scoreBump .5s cubic-bezier(.3,1.7,.4,1);}
 @keyframes scoreBump{0%{transform:scale(1);} 40%{transform:scale(1.35); color:var(--accent);} 100%{transform:scale(1);}}
 .match-clock{font-weight:800; color:var(--accent); font-size:18px;}
-.pitch-wrap{position:relative; max-width:900px; margin:0 auto;}
-#pitch-canvas{display:block; width:100%; height:auto; background:#0a2818;}
-.goal-burst{
-  position:absolute; top:36%; left:50%; transform:translate(-50%,-50%);
-  font-weight:900; font-size:clamp(32px, 12vw, 56px); color:var(--accent); letter-spacing:1px;
-  text-shadow:0 0 24px rgba(255,210,63,.8), 0 6px 18px rgba(0,0,0,.6);
-  -webkit-text-stroke:2px rgba(0,0,0,.35);
-  pointer-events:none; z-index:6;
+
+.match-log{
+  flex:1; min-height:0; max-width:640px; width:100%; margin:0 auto; padding:14px 16px;
+  display:flex; flex-direction:column; gap:8px; overflow-y:auto;
 }
-.goal-burst.hidden{display:none;}
-.goal-burst.show{animation:goalPop 1.3s cubic-bezier(.2,1.7,.4,1) both;}
+.log-entry{
+  background:#0e1526; border:1px solid #202a45; border-radius:10px; padding:10px 14px;
+  font-size:14px; animation:logIn .35s ease both;
+}
+@keyframes logIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+.log-entry.key{
+  background:rgba(255,210,63,.12); border-color:rgba(255,210,63,.4); font-weight:700;
+  animation:logIn .35s ease both, keyPulse 1.4s ease-in-out infinite .35s;
+}
+@keyframes keyPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,210,63,.3);} 50%{box-shadow:0 0 0 6px rgba(255,210,63,0);}}
+.log-entry.goal{
+  background:rgba(0,224,168,.14); border-color:var(--accent-2); font-weight:800; font-size:15px;
+}
+
+.goal-toast{
+  position:fixed; top:40%; left:50%; transform:translate(-50%,-50%);
+  font-weight:900; font-size:clamp(40px, 14vw, 64px); color:var(--accent); letter-spacing:1px;
+  text-shadow:0 0 28px rgba(255,210,63,.85), 0 6px 18px rgba(0,0,0,.6);
+  -webkit-text-stroke:2px rgba(0,0,0,.35);
+  pointer-events:none; z-index:40;
+}
+.goal-toast.hidden{display:none;}
+.goal-toast.show{animation:goalPop 1.3s cubic-bezier(.2,1.7,.4,1) both;}
 @keyframes goalPop{
   0%{transform:translate(-50%,-50%) scale(.4) rotate(-8deg); opacity:0;}
   30%{transform:translate(-50%,-50%) scale(1.15) rotate(3deg); opacity:1;}
@@ -322,12 +339,11 @@ body{
   80%{opacity:1;}
   100%{opacity:0; transform:translate(-50%,-50%) scale(1) rotate(0);}
 }
-.match-commentary{
-  max-width:900px; margin:12px auto; padding:12px 18px; background:#0e1526; border-radius:10px;
-  font-size:14px; text-align:center; min-height:20px; border:1px solid #202a45;
+
+#dribble-canvas{
+  display:block; width:100%; max-width:320px; height:auto; margin:0 auto;
+  border-radius:12px; border:1px solid #2a3552; touch-action:none; cursor:pointer;
 }
-.match-commentary.pulse{animation:commentaryPulse .4s ease;}
-@keyframes commentaryPulse{from{opacity:.3; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
 
 .minigame-overlay{
   position:fixed; inset:0; background:rgba(4,10,20,.78); display:flex; align-items:center; justify-content:center;

@@ -177,11 +177,8 @@
       </div>
       <div class="match-clock"><span id="match-minute">0</span>'</div>
     </div>
-    <div class="pitch-wrap">
-      <canvas id="pitch-canvas" width="900" height="560"></canvas>
-      <div id="goal-burst" class="goal-burst hidden">GOAL!</div>
-    </div>
-    <div id="match-commentary" class="match-commentary">המשחק עומד להתחיל...</div>
+    <div id="match-log" class="match-log"></div>
+    <div id="goal-toast" class="goal-toast hidden">GOAL!</div>
 
     <div id="minigame-overlay" class="minigame-overlay hidden">
       <div class="minigame-box">
@@ -200,6 +197,11 @@
         <div id="aim-mode" class="hidden">
           <canvas id="aim-canvas" width="320" height="220"></canvas>
           <p id="aim-hint" class="aim-hint">גע ברשת כדי לבחור כיוון</p>
+        </div>
+
+        <div id="dribble-mode" class="hidden">
+          <canvas id="dribble-canvas" width="320" height="260"></canvas>
+          <p id="dribble-hint" class="aim-hint">החלק אצבע שמאלה או ימינה כדי לעבור את המגן</p>
         </div>
       </div>
     </div>
@@ -269,6 +271,7 @@
 <script src="js/data.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/aim.js"></script>
+<script src="js/dribble.js"></script>
 <script src="js/career.js"></script>
 <script src="js/match.js"></script>
 <script src="js/ui.js"></script>
