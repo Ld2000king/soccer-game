@@ -3,7 +3,6 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - claude/soccer-game-design-nhv7e7
       - main
   workflow_dispatch:
 
