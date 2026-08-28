@@ -140,10 +140,30 @@ const Career = {
     if(this.state.week > totalRounds){
       this._endOfSeason();
     }
-    if(!this.state.pendingTransfer && Math.random()<0.4){
+    if(!this.state.pendingTransfer){
+      this._maybeTriggerMidSeasonOffer();
+    }
+    if(!this.state.pendingTransfer && !this.state.pendingEvent && Math.random()<0.4){
       this._maybeTriggerEvent();
     }
     this.save();
+  },
+
+  _absWeek(){
+    return (this.state.season-1)*this.state.fixtures.length + this.state.week;
+  },
+
+  // ---- Mid-season transfer interest (separate from the guaranteed end-of-season window) ----
+  _maybeTriggerMidSeasonOffer(){
+    const p = this.state.player;
+    if(p.reputation < 10) return;
+    const abs = this._absWeek();
+    const last = this.state.lastOfferAbsWeek!=null ? this.state.lastOfferAbsWeek : -999;
+    if(abs - last < 5) return; // cooldown so offers don't spam every week
+    if(Math.random() < 0.18){
+      this._generateTransferOffers(1);
+      this.state.lastOfferAbsWeek = abs;
+    }
   },
 
   // ---- Random life decisions between matches ----
@@ -197,24 +217,57 @@ const Career = {
 
     // maybe transfer offers based on reputation & performance
     if(p.reputation>=15 && Math.random()<0.6){
-      this._generateTransferOffers();
+      this._generateTransferOffers(3);
+      this.state.lastOfferAbsWeek = this._absWeek();
     }
   },
 
-  _generateTransferOffers(){
+  _generateTransferOffers(count){
     const p = this.state.player;
     const myRating = this.myClub().rating;
     const candidates = this.state.clubs
       .filter(c=>c.id!==p.clubId && c.rating >= myRating-6)
       .sort((a,b)=> Math.abs(a.rating-(myRating+p.reputation/3)) - Math.abs(b.rating-(myRating+p.reputation/3)))
-      .slice(0,3);
+      .slice(0,count);
     if(candidates.length===0) return;
-    this.state.pendingTransfer = {
-      offers: candidates.map(c=>({
-        clubId:c.id,
-        wage: Math.round(p.wage * (1 + (c.rating-myRating)/60 + Math.random()*0.3)),
-      }))
-    };
+    const offers = candidates.map(c=>({
+      clubId:c.id,
+      wage: Math.round(p.wage * (1 + (c.rating-myRating)/60 + Math.random()*0.3)),
+      attempts:0,
+    }));
+    if(this.state.pendingTransfer){
+      const existingIds = new Set(this.state.pendingTransfer.offers.map(o=>o.clubId));
+      offers.forEach(o=>{ if(!existingIds.has(o.clubId)) this.state.pendingTransfer.offers.push(o); });
+    } else {
+      this.state.pendingTransfer = { offers };
+    }
+  },
+
+  // ---- Contract negotiation on a pending transfer offer ----
+  // Returns {result:"raised"|"hold"|"withdrawn", wage?}
+  negotiate(clubId){
+    const p = this.state.player;
+    const offer = this.state.pendingTransfer.offers.find(o=>o.clubId===clubId);
+    if(!offer) return { result:"withdrawn" };
+    offer.attempts = (offer.attempts||0)+1;
+    const club = this.getClub(clubId);
+    const leverage = (p.reputation/40) + (this.overall()-club.rating)/60;
+    const successChance = Math.max(0.15, Math.min(0.75, 0.45 + leverage - offer.attempts*0.1));
+    const withdrawChance = Math.min(0.35, 0.05*offer.attempts*offer.attempts);
+    const roll = Math.random();
+    let result;
+    if(roll < withdrawChance){
+      this.state.pendingTransfer.offers = this.state.pendingTransfer.offers.filter(o=>o.clubId!==clubId);
+      if(this.state.pendingTransfer.offers.length===0) this.state.pendingTransfer = null;
+      result = { result:"withdrawn" };
+    } else if(roll < withdrawChance+successChance){
+      offer.wage = Math.round(offer.wage * (1 + 0.08 + Math.random()*0.12));
+      result = { result:"raised", wage:offer.wage };
+    } else {
+      result = { result:"hold", wage:offer.wage };
+    }
+    this.save();
+    return result;
   },
 
   acceptTransfer(clubId){
@@ -225,6 +278,13 @@ const Career = {
     p.contractWeeks = 52;
     this.addNews(`${p.name} עובר ל${this.getClub(clubId).name}!`);
     this.state.pendingTransfer = null;
+    this.save();
+  },
+
+  declineOffer(clubId){
+    if(!this.state.pendingTransfer) return;
+    this.state.pendingTransfer.offers = this.state.pendingTransfer.offers.filter(o=>o.clubId!==clubId);
+    if(this.state.pendingTransfer.offers.length===0) this.state.pendingTransfer = null;
     this.save();
   },
 

@@ -245,6 +245,16 @@ body{
 }
 .aim-hint{margin-top:14px; font-size:14px; font-weight:700; color:var(--text-dim); min-height:20px;}
 
+/* ===== Contract negotiation ===== */
+.negotiate-panel{text-align:center;}
+.negotiate-crest{width:56px; height:56px; font-size:16px; margin:0 auto 10px;}
+.wage-offer-box{
+  background:#0e1526; border:1px solid #2a3552; border-radius:12px; padding:16px; margin:18px 0 10px;
+}
+.wage-offer-label{font-size:12px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px;}
+.wage-offer-value{font-size:28px; font-weight:900; color:var(--accent); margin-top:4px;}
+.negotiate-status{min-height:22px; font-weight:700; font-size:13px; color:var(--text-dim);}
+
 /* ===== Life event screen ===== */
 .event-panel{text-align:center;}
 .event-icon{font-size:48px; margin-bottom:6px;}

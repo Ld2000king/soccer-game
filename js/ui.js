@@ -184,9 +184,15 @@ function resolveTraining(){
 }
 
 // ---------- TRANSFER ----------
+function crestInitials(c){ return c.name.split(" ").map(w=>w[0]).join("").slice(0,3); }
+
 function renderTransferScreen(){
   const pt = Career.state.pendingTransfer;
-  $("#transfer-desc").textContent = "מועדונים מציעים לך חוזה חדש. באיזה מועדון תרצה להמשיך?";
+  const isMidSeason = pt.offers.length===1;
+  $("#transfer-title").textContent = isMidSeason ? "הצעת העברה" : "חלון העברות";
+  $("#transfer-desc").textContent = isMidSeason
+    ? "מועדון מתעניין בשירותיך באמצע העונה!"
+    : "מועדונים מציעים לך חוזה חדש. באיזה מועדון תרצה להמשיך?";
   const grid = $("#transfer-offers");
   grid.innerHTML = "";
   pt.offers.forEach(o=>{
@@ -194,16 +200,49 @@ function renderTransferScreen(){
     const el = document.createElement("div");
     el.className = "club-card";
     el.innerHTML = `
-      <div class="club-crest" style="background:${c.primary}; color:${c.secondary}; border-color:${c.secondary}">${c.name.split(" ").map(w=>w[0]).join("").slice(0,3)}</div>
+      <div class="club-crest" style="background:${c.primary}; color:${c.secondary}; border-color:${c.secondary}">${crestInitials(c)}</div>
       <div class="club-name">${c.name}</div>
       <div class="club-rating">דירוג ${c.rating} • שכר ${o.wage}₪/שבוע</div>
     `;
     el.addEventListener("click", ()=>{
-      Career.acceptTransfer(o.clubId);
-      goDashboard();
+      negotiateClubId = o.clubId;
+      renderNegotiateScreen();
+      showScreen("screen-negotiate");
     });
     grid.appendChild(el);
   });
+}
+
+// ---------- CONTRACT NEGOTIATION ----------
+let negotiateClubId = null;
+
+function currentOffer(){
+  if(!Career.state.pendingTransfer) return null;
+  return Career.state.pendingTransfer.offers.find(o=>o.clubId===negotiateClubId) || null;
+}
+
+function renderNegotiateScreen(){
+  const offer = currentOffer();
+  if(!offer){ goDashboard(); return; }
+  const c = Career.getClub(negotiateClubId);
+  $("#negotiate-crest").textContent = crestInitials(c);
+  $("#negotiate-crest").style.background = c.primary;
+  $("#negotiate-crest").style.color = c.secondary;
+  $("#negotiate-crest").style.borderColor = c.secondary;
+  $("#negotiate-club-name").textContent = c.name;
+  $("#negotiate-club-rating").textContent = `דירוג מועדון ${c.rating}`;
+  $("#negotiate-wage").textContent = `${offer.wage.toLocaleString()}₪ / שבוע`;
+  $("#negotiate-status").textContent = "";
+  $("#btn-negotiate-wage").disabled = offer.attempts>=3;
+}
+
+function backToOffersOrDashboard(){
+  if(Career.state.pendingTransfer && Career.state.pendingTransfer.offers.length>0){
+    renderTransferScreen();
+    showScreen("screen-transfer");
+  } else {
+    goDashboard();
+  }
 }
 
 // ---------- WIRE STATIC BUTTONS ----------
@@ -261,6 +300,31 @@ document.addEventListener("DOMContentLoaded", ()=>{
   $("#btn-event-b").addEventListener("click", ()=>{
     Career.resolveEvent("b");
     goDashboard();
+  });
+
+  $("#btn-sign-contract").addEventListener("click", ()=>{
+    Career.acceptTransfer(negotiateClubId);
+    goDashboard();
+  });
+
+  $("#btn-negotiate-wage").addEventListener("click", ()=>{
+    const res = Career.negotiate(negotiateClubId);
+    if(res.result==="raised"){
+      $("#negotiate-wage").textContent = `${res.wage.toLocaleString()}₪ / שבוע`;
+      $("#negotiate-status").textContent = "המועדון הסכים להעלות את ההצעה! 💰";
+      $("#btn-negotiate-wage").disabled = currentOffer().attempts>=3;
+    } else if(res.result==="hold"){
+      $("#negotiate-status").textContent = "המועדון עומד על ההצעה המקורית.";
+      $("#btn-negotiate-wage").disabled = currentOffer() ? currentOffer().attempts>=3 : true;
+    } else {
+      $("#negotiate-status").textContent = "המועדון מבטל את ההצעה — לחצת יותר מדי חזק.";
+      setTimeout(()=> backToOffersOrDashboard(), 1400);
+    }
+  });
+
+  $("#btn-decline-offer").addEventListener("click", ()=>{
+    Career.declineOffer(negotiateClubId);
+    backToOffersOrDashboard();
   });
 
   $$(".dash-tab").forEach(tab=>{
