@@ -40,7 +40,8 @@ body{
 .btn-action{flex:1;}
 
 /* ===== Menu ===== */
-#screen-menu{position:relative; display:flex; align-items:center; justify-content:center;}
+#screen-menu{position:relative;}
+#screen-menu.active{display:flex; align-items:center; justify-content:center;}
 .menu-bg{position:absolute; inset:0; overflow:hidden;}
 .menu-bg-field{
   position:absolute; inset:0;
