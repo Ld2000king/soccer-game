@@ -1,0 +1,213 @@
+// ===== Career / season / league state management =====
+
+const SAVE_KEY = "starStrikerSave_v1";
+
+const Career = {
+  state: null,
+
+  newGame(name, position, clubId){
+    const club = CLUBS.find(c=>c.id===clubId);
+    const base = { pace:45, shooting:45, passing:45, dribbling:45, defending:45, physical:45 };
+    // boost key stats for chosen position
+    POSITIONS[position].key.forEach(k=> base[k]+=10);
+
+    this.state = {
+      player:{
+        name, position, age:18,
+        ...base,
+        potential: 70 + Math.floor(Math.random()*25),
+        energy:100, morale:75, reputation:5,
+        money:5000, wage:400,
+        clubId, contractWeeks: 52,
+        goals:0, assists:0, appearances:0, form:0,
+      },
+      season:1, week:1,
+      clubs: JSON.parse(JSON.stringify(CLUBS)),
+      table: {}, // clubId -> {p,w,d,l,gf,ga,pts}
+      fixtures: [], // list of {round, home, away}
+      news: [],
+      pendingTransfer: null,
+    };
+    CLUBS.forEach(c=> this.state.table[c.id] = {p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0});
+    this._genFixtures();
+    this.addNews(`ברוך הבא ל${club.name}! תתחיל להוכיח את עצמך.`);
+    this.save();
+  },
+
+  _genFixtures(){
+    // double round-robin across all clubs (includes player's club acting as itself)
+    const ids = this.state.clubs.map(c=>c.id);
+    const n = ids.length;
+    const rounds = [];
+    const arr = ids.slice();
+    for(let r=0; r<n-1; r++){
+      const roundPairs = [];
+      for(let i=0;i<n/2;i++){
+        const home = arr[i], away = arr[n-1-i];
+        roundPairs.push([home,away]);
+      }
+      rounds.push(roundPairs);
+      arr.splice(1,0, arr.pop());
+    }
+    const fixtures = [];
+    let roundNum=1;
+    rounds.forEach(rp=>{ fixtures.push({round:roundNum++, pairs:rp.map(p=>({home:p[0],away:p[1]}))}); });
+    rounds.forEach(rp=>{ fixtures.push({round:roundNum++, pairs:rp.map(p=>({home:p[1],away:p[0]}))}); });
+    this.state.fixtures = fixtures;
+  },
+
+  getClub(id){ return this.state.clubs.find(c=>c.id===id); },
+  myClub(){ return this.getClub(this.state.player.clubId); },
+
+  currentRoundFixtures(){
+    const w = this.state.week;
+    return this.state.fixtures.find(f=>f.round===w);
+  },
+
+  myFixtureThisWeek(){
+    const rf = this.currentRoundFixtures();
+    if(!rf) return null;
+    const myId = this.state.player.clubId;
+    return rf.pairs.find(p=>p.home===myId || p.away===myId) || null;
+  },
+
+  addNews(text){
+    this.state.news.unshift(text);
+    this.state.news = this.state.news.slice(0,25);
+  },
+
+  overall(){
+    const p = this.state.player;
+    return Math.round((p.pace+p.shooting+p.passing+p.dribbling+p.defending+p.physical)/6);
+  },
+
+  // ---- Training ----
+  applyTraining(statId, score){ // score 0..1
+    const p = this.state.player;
+    const gain = Math.round(score*3); // 0..3 points
+    const cap = p.potential;
+    p[statId] = Math.min(cap, p[statId]+gain);
+    p.energy = Math.max(0, p.energy - 18);
+    return gain;
+  },
+
+  rest(){
+    this.state.player.energy = Math.min(100, this.state.player.energy + 35);
+    this.state.player.morale = Math.min(100, this.state.player.morale + 5);
+  },
+
+  // ---- Simulate all other matches in this round (non-interactive) ----
+  simulateBackgroundRound(excludePairKey){
+    const rf = this.currentRoundFixtures();
+    if(!rf) return;
+    rf.pairs.forEach(pair=>{
+      const key = pair.home+"-"+pair.away;
+      if(key===excludePairKey) return;
+      const home = this.getClub(pair.home), away = this.getClub(pair.away);
+      const hs = home.rating + 4 + Math.random()*14;
+      const as = away.rating + Math.random()*14;
+      const hg = Math.max(0, Math.round((hs-as)/12 + (Math.random()*3-1)));
+      const ag = Math.max(0, Math.round((as-hs)/14 + (Math.random()*3-1)));
+      this._recordResult(pair.home, pair.away, hg, ag);
+    });
+  },
+
+  _recordResult(homeId, awayId, hg, ag){
+    const t = this.state.table;
+    t[homeId].p++; t[awayId].p++;
+    t[homeId].gf+=hg; t[homeId].ga+=ag;
+    t[awayId].gf+=ag; t[awayId].ga+=hg;
+    if(hg>ag){ t[homeId].w++; t[homeId].pts+=3; t[awayId].l++; }
+    else if(hg<ag){ t[awayId].w++; t[awayId].pts+=3; t[homeId].l++; }
+    else { t[homeId].d++; t[awayId].d++; t[homeId].pts++; t[awayId].pts++; }
+  },
+
+  recordMyResult(homeId, awayId, hg, ag){
+    this._recordResult(homeId, awayId, hg, ag);
+  },
+
+  sortedTable(){
+    return this.state.clubs.map(c=>({club:c, ...this.state.table[c.id]}))
+      .sort((a,b)=> b.pts-a.pts || (b.gf-b.ga)-(a.gf-a.ga) || b.gf-a.gf);
+  },
+
+  // ---- Advance week after match / rest handled by caller ----
+  advanceWeek(){
+    this.state.week++;
+    const totalRounds = this.state.fixtures.length;
+    if(this.state.week > totalRounds){
+      this._endOfSeason();
+    }
+    this.save();
+  },
+
+  _endOfSeason(){
+    const p = this.state.player;
+    p.age++;
+    this.addNews(`עונה ${this.state.season} הסתיימה! ${p.name} מתבגר לגיל ${p.age}.`);
+    // age decline after 30
+    if(p.age>30){
+      ["pace","physical"].forEach(k=> p[k]=Math.max(30,p[k]-3));
+    }
+    this.state.season++;
+    this.state.week=1;
+    Object.keys(this.state.table).forEach(id=> this.state.table[id]={p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0});
+    this._genFixtures();
+
+    // wage/money payout roughly weekly during season, small bonus here
+    p.money += p.wage*4;
+
+    // maybe transfer offers based on reputation & performance
+    if(p.reputation>=15 && Math.random()<0.6){
+      this._generateTransferOffers();
+    }
+  },
+
+  _generateTransferOffers(){
+    const p = this.state.player;
+    const myRating = this.myClub().rating;
+    const candidates = this.state.clubs
+      .filter(c=>c.id!==p.clubId && c.rating >= myRating-6)
+      .sort((a,b)=> Math.abs(a.rating-(myRating+p.reputation/3)) - Math.abs(b.rating-(myRating+p.reputation/3)))
+      .slice(0,3);
+    if(candidates.length===0) return;
+    this.state.pendingTransfer = {
+      offers: candidates.map(c=>({
+        clubId:c.id,
+        wage: Math.round(p.wage * (1 + (c.rating-myRating)/60 + Math.random()*0.3)),
+      }))
+    };
+  },
+
+  acceptTransfer(clubId){
+    const p = this.state.player;
+    const offer = this.state.pendingTransfer.offers.find(o=>o.clubId===clubId);
+    p.clubId = clubId;
+    p.wage = offer.wage;
+    p.contractWeeks = 52;
+    this.addNews(`${p.name} עובר ל${this.getClub(clubId).name}!`);
+    this.state.pendingTransfer = null;
+    this.save();
+  },
+
+  skipTransfer(){
+    this.state.pendingTransfer = null;
+    this.save();
+  },
+
+  // ---- persistence ----
+  save(){
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify(this.state)); }catch(e){}
+  },
+  load(){
+    try{
+      const raw = localStorage.getItem(SAVE_KEY);
+      if(!raw) return false;
+      this.state = JSON.parse(raw);
+      return true;
+    }catch(e){ return false; }
+  },
+  hasSave(){
+    return !!localStorage.getItem(SAVE_KEY);
+  },
+};

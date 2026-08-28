@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Star Striker — קריירת כדורגל</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ===== מסך פתיחה ===== -->
+  <section id="screen-menu" class="screen active">
+    <div class="menu-bg">
+      <div class="menu-bg-field"></div>
+      <div class="menu-bg-glow"></div>
+    </div>
+    <div class="menu-content">
+      <h1 class="game-title">STAR <span>STRIKER</span></h1>
+      <p class="game-subtitle">מהחצר האחורית לכוכבות עולמית</p>
+      <div class="menu-buttons">
+        <button id="btn-new-game" class="btn btn-primary btn-lg">קריירה חדשה</button>
+        <button id="btn-continue" class="btn btn-secondary btn-lg" style="display:none;">המשך קריירה</button>
+      </div>
+      <p class="menu-footer">גרסת דפדפן • שמירה אוטומטית מקומית</p>
+    </div>
+  </section>
+
+  <!-- ===== יצירת שחקן ===== -->
+  <section id="screen-create" class="screen">
+    <div class="panel create-panel">
+      <h2>בניית השחקן שלך</h2>
+
+      <label class="field-label">שם השחקן</label>
+      <input id="input-name" type="text" maxlength="16" placeholder="לדוגמה: דני כהן" class="text-input">
+
+      <label class="field-label">עמדה</label>
+      <div id="position-picker" class="chip-row">
+        <button class="chip" data-pos="FWD">חלוץ</button>
+        <button class="chip" data-pos="MID">קשר</button>
+        <button class="chip" data-pos="DEF">מגן</button>
+        <button class="chip" data-pos="GK">שוער</button>
+      </div>
+
+      <label class="field-label">מועדון ראשון (ליגה נמוכה)</label>
+      <div id="club-picker" class="club-grid"></div>
+
+      <button id="btn-start-career" class="btn btn-primary btn-lg" disabled>התחל קריירה</button>
+    </div>
+  </section>
+
+  <!-- ===== דשבורד קריירה ===== -->
+  <section id="screen-dashboard" class="screen">
+    <header class="topbar">
+      <div class="topbar-player">
+        <div id="hud-avatar" class="avatar"></div>
+        <div>
+          <div id="hud-name" class="hud-name">—</div>
+          <div id="hud-club" class="hud-club">—</div>
+        </div>
+      </div>
+      <div class="topbar-stats">
+        <div class="hud-pill">🎂 <span id="hud-age">18</span></div>
+        <div class="hud-pill">⭐ <span id="hud-rep">0</span></div>
+        <div class="hud-pill">💰 <span id="hud-money">0</span>₪</div>
+        <div class="hud-pill energy-pill">⚡ <span id="hud-energy-text">100</span>%</div>
+      </div>
+    </header>
+
+    <main class="dash-grid">
+      <div class="card card-week">
+        <h3>שבוע <span id="hud-week">1</span> — עונה <span id="hud-season">1</span></h3>
+        <p id="next-fixture" class="next-fixture">טוען משחק הבא...</p>
+        <div class="action-row">
+          <button id="btn-train" class="btn btn-action">🏋️ אימון</button>
+          <button id="btn-rest" class="btn btn-action">🛌 מנוחה</button>
+          <button id="btn-play-match" class="btn btn-primary btn-action">⚽ שחק משחק</button>
+        </div>
+      </div>
+
+      <div class="card card-stats">
+        <h3>יכולות</h3>
+        <div id="stats-bars" class="stats-bars"></div>
+      </div>
+
+      <div class="card card-table">
+        <h3>טבלת הליגה</h3>
+        <div id="league-table" class="league-table"></div>
+      </div>
+
+      <div class="card card-news">
+        <h3>עדכונים</h3>
+        <div id="news-feed" class="news-feed"></div>
+      </div>
+    </main>
+  </section>
+
+  <!-- ===== מסך אימון ===== -->
+  <section id="screen-training" class="screen">
+    <div class="panel training-panel">
+      <h2 id="training-title">אימון</h2>
+      <div id="training-stat-picker" class="chip-row" style="justify-content:center; margin-bottom:16px;"></div>
+      <p id="training-desc" class="training-desc">לחץ בדיוק כשהמחוג נמצא באזור הירוק!</p>
+      <div class="timing-wrap">
+        <div id="timing-track" class="timing-track">
+          <div id="timing-zone" class="timing-zone"></div>
+          <div id="timing-marker" class="timing-marker"></div>
+        </div>
+      </div>
+      <button id="btn-timing-hit" class="btn btn-primary btn-lg">בצע!</button>
+      <div id="training-result" class="training-result"></div>
+    </div>
+  </section>
+
+  <!-- ===== מסך משחק ===== -->
+  <section id="screen-match" class="screen">
+    <div class="match-header">
+      <div class="score-box">
+        <span id="match-home-name">בית</span>
+        <span id="match-score">0 - 0</span>
+        <span id="match-away-name">חוץ</span>
+      </div>
+      <div class="match-clock"><span id="match-minute">0</span>'</div>
+    </div>
+    <canvas id="pitch-canvas" width="900" height="560"></canvas>
+    <div id="match-commentary" class="match-commentary">המשחק עומד להתחיל...</div>
+
+    <div id="minigame-overlay" class="minigame-overlay hidden">
+      <div class="minigame-box">
+        <h3 id="minigame-title">רגע מכריע!</h3>
+        <div class="timing-wrap">
+          <div id="match-timing-track" class="timing-track">
+            <div id="match-timing-zone" class="timing-zone"></div>
+            <div id="match-timing-marker" class="timing-marker"></div>
+          </div>
+        </div>
+        <button id="btn-match-timing-hit" class="btn btn-primary btn-lg">עכשיו!</button>
+      </div>
+    </div>
+
+    <div id="match-end-overlay" class="minigame-overlay hidden">
+      <div class="minigame-box">
+        <h3>המשחק הסתיים</h3>
+        <p id="match-end-summary"></p>
+        <button id="btn-match-continue" class="btn btn-primary btn-lg">המשך</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== חלון העברות / חוזה ===== -->
+  <section id="screen-transfer" class="screen">
+    <div class="panel">
+      <h2 id="transfer-title">חלון העברות</h2>
+      <p id="transfer-desc" class="training-desc"></p>
+      <div id="transfer-offers" class="club-grid"></div>
+      <button id="btn-skip-transfer" class="btn btn-secondary btn-lg">הישאר במועדון הנוכחי</button>
+    </div>
+  </section>
+
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/career.js"></script>
+<script src="js/match.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
