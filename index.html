@@ -14,6 +14,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Star Striker">
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
+
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -23,11 +27,37 @@
   <!-- ===== מסך פתיחה ===== -->
   <section id="screen-menu" class="screen active">
     <div class="menu-bg">
-      <div class="menu-bg-field"></div>
-      <div class="menu-bg-glow"></div>
+      <div class="menu-beam"></div>
+      <div class="menu-beam b2"></div>
+      <div class="menu-stripes"></div>
+      <div class="confetti-piece" style="left:8%;--c:#ffd23f;animation-duration:5.5s;animation-delay:0s;"></div>
+      <div class="confetti-piece" style="left:18%;--c:#00e0a8;animation-duration:6.2s;animation-delay:.8s;"></div>
+      <div class="confetti-piece round" style="left:30%;--c:#fff;animation-duration:5s;animation-delay:1.6s;"></div>
+      <div class="confetti-piece" style="left:46%;--c:#ffd23f;animation-duration:6.8s;animation-delay:.3s;"></div>
+      <div class="confetti-piece" style="left:62%;--c:#00e0a8;animation-duration:5.8s;animation-delay:2.1s;"></div>
+      <div class="confetti-piece round" style="left:74%;--c:#fff;animation-duration:6.4s;animation-delay:1.1s;"></div>
+      <div class="confetti-piece" style="left:85%;--c:#ffd23f;animation-duration:5.2s;animation-delay:2.6s;"></div>
+      <div class="confetti-piece" style="left:92%;--c:#00e0a8;animation-duration:6.6s;animation-delay:.5s;"></div>
     </div>
     <div class="menu-content">
-      <h1 class="game-title">STAR <span>STRIKER</span></h1>
+      <div class="menu-badge">
+        <div class="menu-badge-glow"></div>
+        <svg class="menu-ball" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="46" fill="#ffffff" stroke="#1c1c1c" stroke-width="3"/>
+          <polygon points="50,28 63,38 58,54 42,54 37,38" fill="#1c1c1c"/>
+          <polygon points="16,46 30,42 34,58 22,68 10,60" fill="#1c1c1c"/>
+          <polygon points="84,46 70,42 66,58 78,68 90,60" fill="#1c1c1c"/>
+          <polygon points="34,80 50,70 66,80 60,94 40,94" fill="#1c1c1c"/>
+        </svg>
+      </div>
+      <h1 class="game-title">
+        <span class="title-row">
+          <span>S</span><span>T</span><span>A</span><span>R</span>
+        </span>
+        <span class="title-row accent">
+          <span>S</span><span>T</span><span>R</span><span>I</span><span>K</span><span>E</span><span>R</span>
+        </span>
+      </h1>
       <p class="game-subtitle">מהחצר האחורית לכוכבות עולמית</p>
       <div class="menu-buttons">
         <button id="btn-new-game" class="btn btn-primary btn-lg">קריירה חדשה</button>
@@ -71,10 +101,10 @@
         </div>
       </div>
       <div class="topbar-stats">
-        <div class="hud-pill">🎂 <span id="hud-age">18</span></div>
-        <div class="hud-pill">⭐ <span id="hud-rep">0</span></div>
-        <div class="hud-pill">💰 <span id="hud-money">0</span>₪</div>
-        <div class="hud-pill energy-pill">⚡ <span id="hud-energy-text">100</span>%</div>
+        <div class="hud-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v4M16 2v4M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/></svg><span id="hud-age">18</span></div>
+        <div class="hud-pill"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.6 1.7 7-6.3-4-6.3 4 1.7-7L2 9.5l7.1-.6z"/></svg><span id="hud-rep">0</span></div>
+        <div class="hud-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 15.5c.5 1 1.5 1.5 2.5 1.5s2-.5 2.5-1.5M9 9.5c0-1 1-2 3-2s3 1 3 2-1.2 1.6-2 2.2"/></svg><span id="hud-money">0</span>₪</div>
+        <div class="hud-pill energy-pill"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg><span id="hud-energy-text">100</span>%</div>
       </div>
     </header>
 
@@ -83,9 +113,18 @@
         <h3>שבוע <span id="hud-week">1</span> — עונה <span id="hud-season">1</span></h3>
         <p id="next-fixture" class="next-fixture">טוען משחק הבא...</p>
         <div class="action-row">
-          <button id="btn-train" class="btn btn-secondary btn-action">🏋️ אימון</button>
-          <button id="btn-rest" class="btn btn-secondary btn-action">🛌 מנוחה</button>
-          <button id="btn-play-match" class="btn btn-primary btn-action">⚽ שחק משחק</button>
+          <button id="btn-train" class="btn btn-secondary btn-action icon-action">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5 3 3M17.5 17.5 21 21M6.5 17.5 3 21M17.5 6.5 21 3M9 9l6 6M14 4l6 6-4 4-6-6z"/></svg>
+            אימון
+          </button>
+          <button id="btn-rest" class="btn btn-secondary btn-action icon-action">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h2v6h14v-6h2M5 12V8a2 2 0 0 1 2-2h3v4M5 12h16"/></svg>
+            מנוחה
+          </button>
+          <button id="btn-play-match" class="btn btn-primary btn-action icon-action play-action">
+            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9" fill="none" stroke="#04231a" stroke-width="2"/><path d="M10 8l6 4-6 4z"/></svg>
+            שחק משחק
+          </button>
         </div>
       </div>
 
@@ -138,7 +177,10 @@
       </div>
       <div class="match-clock"><span id="match-minute">0</span>'</div>
     </div>
-    <canvas id="pitch-canvas" width="900" height="560"></canvas>
+    <div class="pitch-wrap">
+      <canvas id="pitch-canvas" width="900" height="560"></canvas>
+      <div id="goal-burst" class="goal-burst hidden">GOAL!</div>
+    </div>
     <div id="match-commentary" class="match-commentary">המשחק עומד להתחיל...</div>
 
     <div id="minigame-overlay" class="minigame-overlay hidden">

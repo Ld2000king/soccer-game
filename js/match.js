@@ -79,10 +79,14 @@ const MatchController = {
     $("#match-home-name").textContent = homeClub.name;
     $("#match-away-name").textContent = awayClub.name;
     $("#match-score").textContent = "0 - 0";
+    $("#match-score").classList.remove("bump");
     $("#match-minute").textContent = "0";
     $("#match-commentary").textContent = `הקהל מתמלא באצטדיון... עומדים להתחיל!`;
+    $("#match-commentary").classList.remove("pulse");
     $("#match-end-overlay").classList.add("hidden");
     $("#minigame-overlay").classList.add("hidden");
+    $("#goal-burst").classList.add("hidden");
+    $("#goal-burst").classList.remove("show");
 
     const canvas = $("#pitch-canvas");
     this.renderer = new PitchRenderer(canvas);
@@ -155,13 +159,28 @@ const MatchController = {
   },
 
   _commentate(text){
-    $("#match-commentary").textContent = text;
+    const el = $("#match-commentary");
+    el.textContent = text;
+    el.classList.remove("pulse");
+    void el.offsetWidth; // restart the animation even if the class was still present
+    el.classList.add("pulse");
   },
 
   _goalScored(side){
     const ctx = this.ctx;
     ctx.score[side]++;
-    $("#match-score").textContent = `${ctx.score.home} - ${ctx.score.away}`;
+    const scoreEl = $("#match-score");
+    scoreEl.textContent = `${ctx.score.home} - ${ctx.score.away}`;
+    scoreEl.classList.remove("bump");
+    void scoreEl.offsetWidth;
+    scoreEl.classList.add("bump");
+
+    const burst = $("#goal-burst");
+    burst.classList.remove("hidden", "show");
+    void burst.offsetWidth;
+    burst.classList.add("show");
+    setTimeout(()=> burst.classList.add("hidden"), 1300);
+
     const goalX = 450, goalY = side==="home" ? 540 : 30; // scored at opponent's goal
     this.renderer.moveBall(goalX, goalY, 0, 0.5);
     setTimeout(()=> this.renderer.celebrate(goalX, goalY), 500);
