@@ -47,6 +47,7 @@ const MatchController = {
       homeClub, awayClub, myIsHome, p,
       score:{home:0, away:0},
       minute:0,
+      perf:{ goals:0, assists:0, won:0, total:0 },
     };
 
     $("#match-home-name").textContent = homeClub.name;
@@ -86,8 +87,10 @@ const MatchController = {
     for(let i=0;i<bgHomeGoals;i++) events.push({minute:randMinute(), kind:"bg", side:"home"});
     for(let i=0;i<bgAwayGoals;i++) events.push({minute:randMinute(), kind:"bg", side:"away"});
 
-    const coachTrust = p.coachTrust!=null ? p.coachTrust : 50;
-    const numKeyMoments = Math.max(2, Math.min(5, Math.round(2 + coachTrust/33)));
+    const coachTrust = Career.rel("boss");
+    const workRate = Career.currentWorkRate();
+    const numKeyMoments = Math.max(1, Math.min(7,
+      Math.round(2 + coachTrust/33) + workRate.momentBonus));
     for(let i=0;i<numKeyMoments;i++){
       const type = this.pickKeyType(p.position);
       events.push({minute:randMinute(), kind:"key", type});
@@ -211,7 +214,7 @@ const MatchController = {
       $("#timing-mode").classList.remove("hidden");
 
       const bar = new TimingBar($("#match-timing-track"), $("#match-timing-zone"), $("#match-timing-marker"));
-      const chemistry = p.chemistry!=null ? p.chemistry : 50;
+      const chemistry = Career.rel("team");
       const zoneWidth = ev.type==="defend" ? 30 : Math.max(10, Math.min(34, 20 + (chemistry-50)/5));
       bar.setZone(zoneWidth, 30+Math.random()*40);
       bar.speed = 1.6 + Career.overall()/100;
@@ -231,12 +234,14 @@ const MatchController = {
   _applyKeyResult(type, score){
     const ctx = this.ctx, p = ctx.p;
     const success = score > 0.5;
+    ctx.perf.total++;
+    if(success) ctx.perf.won++;
     const heroSide = ctx.myIsHome ? "home" : "away";
     const oppSide = ctx.myIsHome ? "away" : "home";
 
     if(type==="shoot"){
       if(success){
-        p.goals++;
+        p.goals++; ctx.perf.goals++;
         this._logEvent(`🌟 ${ctx.minute}' — ${p.name} כובש בעצמו! שער מדהים!`, {goal:true});
         this._goalScored(heroSide);
         p.reputation += 1;
@@ -245,7 +250,7 @@ const MatchController = {
       }
     } else if(type==="pass"){
       if(success){
-        p.assists++;
+        p.assists++; ctx.perf.assists++;
         this._logEvent(`🎯 ${ctx.minute}' — בישול נהדר של ${p.name}! השער מתקבל!`, {goal:true});
         this._goalScored(heroSide);
         p.reputation += 1;
@@ -291,7 +296,14 @@ const MatchController = {
     const resultKind = myGoals>oppGoals ? "win" : myGoals<oppGoals ? "loss" : "draw";
 
     p.appearances++;
-    p.energy = Math.max(0, p.energy - 30);
+    p.energy = Math.max(0, p.energy - Career.currentWorkRate().energyCost);
+
+    const perf = ctx.perf;
+    const { rating, starMan, earned } = Career.applyMatchRating({
+      goals: perf.goals, assists: perf.assists,
+      keyMomentsWon: perf.won, keyMomentsTotal: perf.total,
+      teamWon: resultKind==="win", teamDrew: resultKind==="draw",
+    });
     if(resultKind==="win"){ p.morale = Math.min(100,p.morale+10); p.money += p.wage + 300; p.reputation += 2; }
     else if(resultKind==="draw"){ p.morale = Math.min(100,p.morale+2); p.money += p.wage + 100; p.reputation += 1; }
     else { p.morale = Math.max(0,p.morale-8); p.money += p.wage; }
@@ -302,9 +314,11 @@ const MatchController = {
 
     const resultLabel = resultKind==="win" ? "ניצחון!" : resultKind==="draw" ? "תיקו" : "הפסד";
     $("#match-end-summary").innerHTML =
-      `${resultLabel} ${ctx.score.home} - ${ctx.score.away}<br>` +
-      `${p.name}: ${p.goals} שערים בקריירה, ${p.assists} בישולים בקריירה<br>` +
-      `אנרגיה: ${p.energy}% • שכר שהתקבל: ${resultKind==="win"?p.wage+300:resultKind==="draw"?p.wage+100:p.wage}₪`;
+      `<div class="end-result">${resultLabel} ${ctx.score.home} - ${ctx.score.away}</div>` +
+      `<div class="end-rating ${starMan?'star-man':''}">ציון המשחק שלך: <b>${rating}</b>${starMan?' ⭐ שחקן המשחק!':''}</div>` +
+      `<div class="end-line">במשחק: ${perf.goals} שערים, ${perf.assists} בישולים • רגעים שניצחת: ${perf.won}/${perf.total}</div>` +
+      `<div class="end-line">💫 הרווחת <b>${earned}</b> סטארבקס</div>` +
+      `<div class="end-line">אנרגיה: ${p.energy}% • שכר: ${(resultKind==="win"?p.wage+300:resultKind==="draw"?p.wage+100:p.wage).toLocaleString()}₪</div>`;
 
     $("#match-end-overlay").classList.remove("hidden");
     Career.save();

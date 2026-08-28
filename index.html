@@ -99,14 +99,15 @@
           <div id="hud-name" class="hud-name">—</div>
           <div id="hud-club" class="hud-club">—</div>
         </div>
-        <button id="btn-lifestyle" class="topbar-icon-btn" title="לייף סטייל" aria-label="לייף סטייל">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>
+        <button id="btn-hub" class="topbar-icon-btn" title="תפריט" aria-label="תפריט">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
         </button>
       </div>
       <div class="topbar-stats">
         <div class="hud-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v4M16 2v4M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/></svg><span id="hud-age">18</span></div>
         <div class="hud-pill"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.6 1.7 7-6.3-4-6.3 4 1.7-7L2 9.5l7.1-.6z"/></svg><span id="hud-rep">0</span></div>
         <div class="hud-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 15.5c.5 1 1.5 1.5 2.5 1.5s2-.5 2.5-1.5M9 9.5c0-1 1-2 3-2s3 1 3 2-1.2 1.6-2 2.2"/></svg><span id="hud-money">0</span>₪</div>
+        <div class="hud-pill sb-pill"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.6 1.7 7-6.3-4-6.3 4 1.7-7L2 9.5l7.1-.6z"/></svg><span id="hud-starbucks">0</span></div>
         <div class="hud-pill energy-pill"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg><span id="hud-energy-text">100</span>%</div>
       </div>
     </header>
@@ -115,6 +116,10 @@
       <div class="card card-week">
         <h3>שבוע <span id="hud-week">1</span> — עונה <span id="hud-season">1</span></h3>
         <p id="next-fixture" class="next-fixture">טוען משחק הבא...</p>
+        <div class="workrate-row">
+          <span class="workrate-label">קצב עבודה:</span>
+          <div id="workrate-picker" class="workrate-picker"></div>
+        </div>
         <div class="action-row">
           <button id="btn-train" class="btn btn-secondary btn-action icon-action">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5 3 3M17.5 17.5 21 21M6.5 17.5 3 21M17.5 6.5 21 3M9 9l6 6M14 4l6 6-4 4-6-6z"/></svg>
@@ -132,7 +137,8 @@
       </div>
 
       <div class="card card-stats">
-        <h3>יכולות</h3>
+        <h3>דירוג כוכב <span id="star-rating-value" class="star-rating-value"></span></h3>
+        <div id="star-rating-row" class="star-rating-row"></div>
         <div id="stats-bars" class="stats-bars"></div>
       </div>
 
@@ -151,6 +157,119 @@
         <div id="news-feed" class="news-feed"></div>
       </div>
     </main>
+  </section>
+
+
+  <!-- ===== תפריט ראשי (hub) ===== -->
+  <section id="screen-hub" class="screen">
+    <header class="sub-header">
+      <button class="topbar-icon-btn back-btn" data-back title="חזרה" aria-label="חזרה">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <h2>הקריירה שלי</h2>
+      <div class="sub-wallet"><span id="hub-money">0</span>₪ • <span id="hub-sb">0</span>💫</div>
+    </header>
+    <div class="hub-grid">
+      <button class="hub-tile" data-goto="screen-skills">
+        <span class="hub-icon">💫</span><span class="hub-name">כישורים</span>
+        <span class="hub-sub">שדרג יכולות עם סטארבקס</span>
+      </button>
+      <button class="hub-tile" data-goto="screen-shop">
+        <span class="hub-icon">👟</span><span class="hub-name">חנות</span>
+        <span class="hub-sub">נעליים ומשקאות אנרגיה</span>
+      </button>
+      <button class="hub-tile" data-goto="screen-sponsors">
+        <span class="hub-icon">💼</span><span class="hub-name">חסויות</span>
+        <span class="hub-sub">חוזי חסות והכנסה שבועית</span>
+      </button>
+      <button class="hub-tile" data-goto="screen-lifestyle">
+        <span class="hub-icon">🏠</span><span class="hub-name">לייף סטייל</span>
+        <span class="hub-sub">רכב, בית, מטוס ועוד</span>
+      </button>
+      <button class="hub-tile" data-goto="screen-casino">
+        <span class="hub-icon">🎰</span><span class="hub-name">קזינו</span>
+        <span class="hub-sub">סלוטס, רולטה, בלאקג'ק</span>
+      </button>
+      <button class="hub-tile" data-goto="screen-career-stats">
+        <span class="hub-icon">📊</span><span class="hub-name">סטטיסטיקות</span>
+        <span class="hub-sub">שערים, ציונים, קשרים</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ===== כישורים ===== -->
+  <section id="screen-skills" class="screen">
+    <header class="sub-header">
+      <button class="topbar-icon-btn back-btn" data-back title="חזרה" aria-label="חזרה">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <h2>כישורים</h2>
+      <div class="sub-wallet"><span id="skills-sb">0</span>💫</div>
+    </header>
+    <p class="sub-note">סטארבקס מרוויחים מציונים טובים במשחקים. ככל שיכולת גבוהה יותר, השדרוג הבא יקר יותר.</p>
+    <div id="skills-list" class="skills-list"></div>
+  </section>
+
+  <!-- ===== חנות ===== -->
+  <section id="screen-shop" class="screen">
+    <header class="sub-header">
+      <button class="topbar-icon-btn back-btn" data-back title="חזרה" aria-label="חזרה">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <h2>חנות</h2>
+      <div class="sub-wallet"><span id="shop-money">0</span>₪</div>
+    </header>
+    <div class="sub-tabs">
+      <button class="sub-tab active" data-shoptab="boots">👟 נעליים</button>
+      <button class="sub-tab" data-shoptab="nrg">⚡ אנרגיה</button>
+    </div>
+    <div id="shop-body" class="shop-body"></div>
+  </section>
+
+  <!-- ===== חסויות ===== -->
+  <section id="screen-sponsors" class="screen">
+    <header class="sub-header">
+      <button class="topbar-icon-btn back-btn" data-back title="חזרה" aria-label="חזרה">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <h2>חסויות</h2>
+      <div class="sub-wallet">+<span id="sponsor-income">0</span>₪/שבוע</div>
+    </header>
+    <p class="sub-note">חוזי חסות נפתחים לפי המוניטין שלך ומשלמים כל שבוע, לנצח.</p>
+    <div id="sponsors-list" class="sponsors-list"></div>
+  </section>
+
+  <!-- ===== קזינו ===== -->
+  <section id="screen-casino" class="screen">
+    <header class="sub-header">
+      <button class="topbar-icon-btn back-btn" data-back title="חזרה" aria-label="חזרה">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <h2>קזינו</h2>
+      <div class="sub-wallet"><span id="casino-money">0</span>₪</div>
+    </header>
+    <div class="sub-tabs">
+      <button class="sub-tab active" data-casinotab="slots">🎰 סלוטס</button>
+      <button class="sub-tab" data-casinotab="roulette">🔴 רולטה</button>
+      <button class="sub-tab" data-casinotab="blackjack">🃏 בלאקג'ק</button>
+    </div>
+    <div class="stake-row">
+      <span class="workrate-label">הימור:</span>
+      <div id="stake-picker" class="workrate-picker"></div>
+    </div>
+    <div id="casino-body" class="casino-body"></div>
+    <div id="casino-result" class="casino-result"></div>
+  </section>
+
+  <!-- ===== סטטיסטיקות קריירה ===== -->
+  <section id="screen-career-stats" class="screen">
+    <header class="sub-header">
+      <button class="topbar-icon-btn back-btn" data-back title="חזרה" aria-label="חזרה">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <h2>סטטיסטיקות קריירה</h2>
+    </header>
+    <div id="career-stats-body" class="career-stats-body"></div>
   </section>
 
   <!-- ===== לייף סטייל ===== -->
@@ -291,6 +410,7 @@
 <script src="js/engine.js"></script>
 <script src="js/aim.js"></script>
 <script src="js/dribble.js"></script>
+<script src="js/casino.js"></script>
 <script src="js/career.js"></script>
 <script src="js/match.js"></script>
 <script src="js/ui.js"></script>

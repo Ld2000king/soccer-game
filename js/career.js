@@ -17,11 +17,17 @@ const Career = {
         ...base,
         potential: 70 + Math.floor(Math.random()*25),
         energy:100, morale:75, reputation:5,
-        chemistry:50, coachTrust:50,
-        money:5000, wage:400,
+        relationships:{ boss:50, team:50, fans:35, partner:50, sponsors:30 },
+        money:5000, wage:400, starBucks:60,
         clubId, contractWeeks: 52,
         goals:0, assists:0, appearances:0, form:0,
-        lifestyle:{}, // categoryId -> itemId owned
+        lifestyle:{},        // categoryId -> itemId owned
+        boots:"street",      // equipped boots id
+        inventory:{},        // consumableId -> count owned
+        activeBoost:null,    // {energy, morale} consumed at next match
+        sponsors:[],         // signed sponsor ids
+        workRate:"mid",
+        lastRating:null, starMan:0, ratingsSum:0, ratingsCount:0,
       },
       season:1, week:1,
       clubs: JSON.parse(JSON.stringify(CLUBS)),
@@ -81,7 +87,130 @@ const Career = {
 
   overall(){
     const p = this.state.player;
-    return Math.round((p.pace+p.shooting+p.passing+p.dribbling+p.defending+p.physical)/6);
+    const s = STAT_KEYS.map(k=>this.effectiveStat(k));
+    return Math.round(s.reduce((a,b)=>a+b,0)/s.length);
+  },
+
+  // ---- Relationships & star rating ----
+  rel(id){
+    const r = this.state.player.relationships;
+    return r && r[id]!=null ? r[id] : 50;
+  },
+  adjustRel(id, delta){
+    const r = this.state.player.relationships;
+    if(!r || r[id]==null) return;
+    r[id] = Math.max(0, Math.min(100, r[id]+delta));
+  },
+  // 0..5 stars, the headline "how big a star are you" number
+  starRating(){
+    const avg = RELATIONSHIPS.reduce((sum,r)=>sum+this.rel(r.id),0)/RELATIONSHIPS.length;
+    return Math.round((avg/20)*10)/10;
+  },
+
+  // ---- Effective stats: base + equipped boots ----
+  bootsBonus(statId){
+    const boots = BOOTS.find(b=>b.id===this.state.player.boots);
+    return (boots && boots.boosts[statId]) || 0;
+  },
+  effectiveStat(statId){
+    const p = this.state.player;
+    return Math.min(99, (p[statId]||0) + this.bootsBonus(statId));
+  },
+
+  // ---- Star Bucks skill upgrades ----
+  upgradeCost(statId){
+    return skillUpgradeCost(this.state.player[statId]);
+  },
+  canUpgrade(statId){
+    const p = this.state.player;
+    return p[statId] < p.potential && p.starBucks >= this.upgradeCost(statId);
+  },
+  upgradeSkill(statId){
+    const p = this.state.player;
+    if(!this.canUpgrade(statId)) return false;
+    p.starBucks -= this.upgradeCost(statId);
+    p[statId] = Math.min(p.potential, p[statId]+1);
+    this.save();
+    return true;
+  },
+
+  // ---- Boots ----
+  buyBoots(id){
+    const p = this.state.player;
+    const boots = BOOTS.find(b=>b.id===id);
+    if(!boots || p.money < boots.cost || p.boots===id) return false;
+    p.money -= boots.cost;
+    p.boots = id;
+    this.addNews(`${p.name} נועל ${boots.name}.`);
+    this.save();
+    return true;
+  },
+
+  // ---- Consumables ----
+  buyConsumable(id){
+    const p = this.state.player;
+    const item = CONSUMABLES.find(c=>c.id===id);
+    if(!item || p.money < item.cost) return false;
+    p.money -= item.cost;
+    p.inventory[id] = (p.inventory[id]||0)+1;
+    this.save();
+    return true;
+  },
+  useConsumable(id){
+    const p = this.state.player;
+    const item = CONSUMABLES.find(c=>c.id===id);
+    if(!item || !p.inventory[id]) return false;
+    p.inventory[id]--;
+    if(p.inventory[id]<=0) delete p.inventory[id];
+    p.energy = Math.min(100, p.energy + item.energy);
+    if(item.morale) p.morale = Math.min(100, p.morale + item.morale);
+    this.save();
+    return true;
+  },
+
+  // ---- Sponsors ----
+  sponsorIncome(){
+    const p = this.state.player;
+    return (p.sponsors||[]).reduce((sum,id)=>{
+      const s = SPONSORS.find(x=>x.id===id);
+      return sum + (s ? s.weekly : 0);
+    },0);
+  },
+  canSignSponsor(id){
+    const p = this.state.player;
+    const s = SPONSORS.find(x=>x.id===id);
+    return !!s && !p.sponsors.includes(id) && p.reputation >= s.reqReputation;
+  },
+  signSponsor(id){
+    const p = this.state.player;
+    if(!this.canSignSponsor(id)) return false;
+    const s = SPONSORS.find(x=>x.id===id);
+    p.sponsors.push(id);
+    p.money += s.signBonus;
+    this.adjustRel("sponsors", 12);
+    this.addNews(`${p.name} חתם על חוזה חסות עם ${s.name}! מענק חתימה: ${s.signBonus.toLocaleString()}₪`);
+    this.save();
+    return true;
+  },
+
+  // ---- Work rate ----
+  setWorkRate(id){
+    if(WORK_RATES.some(w=>w.id===id)){
+      this.state.player.workRate = id;
+      this.save();
+    }
+  },
+  currentWorkRate(){
+    return WORK_RATES.find(w=>w.id===this.state.player.workRate) || WORK_RATES[1];
+  },
+
+  // ---- Gambling (casino games settle through here) ----
+  gamble(stake, payout){
+    const p = this.state.player;
+    p.money = Math.max(0, p.money - stake + payout);
+    if(payout > stake) p.morale = Math.min(100, p.morale+2);
+    else if(payout === 0) p.morale = Math.max(0, p.morale-1);
+    this.save();
   },
 
   // ---- Training ----
@@ -142,6 +271,8 @@ const Career = {
       this._endOfSeason();
     }
     this._chargeLifestyleUpkeep();
+    this._weeklyRelationshipDrift();
+    this.state.player.money += this.sponsorIncome();
     if(!this.state.pendingTransfer){
       this._maybeTriggerMidSeasonOffer();
     }
@@ -173,10 +304,61 @@ const Career = {
     p.lifestyle[categoryId] = itemId;
     if(item.morale) p.morale = Math.max(0, Math.min(100, p.morale+item.morale));
     if(item.reputation) p.reputation = Math.max(0, p.reputation+item.reputation);
-    if(item.chemistry) p.chemistry = Math.max(0, Math.min(100, p.chemistry+item.chemistry));
+    if(item.chemistry) this.adjustRel("team", item.chemistry);
     this.addNews(`${p.name} רכש/ה ${item.name}! ${item.flavor || ""}`.trim());
     this.save();
     return true;
+  },
+
+  // Relationships aren't static: a neglected partner drifts down, fans track
+  // your reputation, and sponsors care that you keep your profile up.
+  _weeklyRelationshipDrift(){
+    const p = this.state.player;
+    const hasPartner = !!(p.lifestyle && p.lifestyle.partner);
+    this.adjustRel("partner", hasPartner ? 1 : -2);
+    const fansTarget = Math.min(100, 25 + p.reputation*1.4);
+    this.adjustRel("fans", this.rel("fans") < fansTarget ? 2 : -1);
+    this.adjustRel("sponsors", (p.sponsors||[]).length>0 ? 1 : -1);
+  },
+
+  // ---- Match rating: the NSS-style 0-10 performance score ----
+  // Drives Star Bucks earned, relationships, and whether the coach keeps
+  // picking you. Star Man is awarded for a standout display.
+  applyMatchRating({goals, assists, keyMomentsWon, keyMomentsTotal, teamWon, teamDrew}){
+    const p = this.state.player;
+    let rating = 5.5;
+    if(keyMomentsTotal>0) rating += (keyMomentsWon/keyMomentsTotal - 0.5) * 4;
+    rating += goals*1.1 + assists*0.7;
+    if(teamWon) rating += 0.6; else if(!teamDrew) rating -= 0.4;
+    rating = Math.max(1, Math.min(10, Math.round(rating*10)/10));
+
+    const starMan = rating >= 8.5;
+    p.lastRating = rating;
+    p.ratingsSum = (p.ratingsSum||0) + rating;
+    p.ratingsCount = (p.ratingsCount||0) + 1;
+    if(starMan) p.starMan = (p.starMan||0) + 1;
+
+    // Star Bucks: the currency you spend on skill upgrades
+    const earned = Math.max(2, Math.round(rating*4 + goals*20 + assists*12 + (starMan?30:0)));
+    p.starBucks += earned;
+
+    // relationships react to the performance
+    const swing = (rating - 6) * 2;
+    this.adjustRel("boss", swing);
+    this.adjustRel("team", swing*0.7);
+    this.adjustRel("fans", swing + goals*3);
+    this.adjustRel("sponsors", swing*0.5);
+    if(starMan){
+      p.reputation += 2;
+      this.addNews(`⭐ ${p.name} נבחר לשחקן המשחק! (ציון ${rating})`);
+    }
+    return { rating, starMan, earned };
+  },
+
+  averageRating(){
+    const p = this.state.player;
+    if(!p.ratingsCount) return null;
+    return Math.round((p.ratingsSum/p.ratingsCount)*10)/10;
   },
 
   _chargeLifestyleUpkeep(){
@@ -225,14 +407,16 @@ const Career = {
     const choice = event[choiceKey];
     const p = this.state.player;
     const eff = choice.effects || {};
-    const statKeys = ["pace","shooting","passing","dribbling","defending","physical"];
     if(eff.energy!=null) p.energy = Math.max(0, Math.min(100, p.energy+eff.energy));
     if(eff.morale!=null) p.morale = Math.max(0, Math.min(100, p.morale+eff.morale));
-    if(eff.chemistry!=null) p.chemistry = Math.max(0, Math.min(100, p.chemistry+eff.chemistry));
-    if(eff.coachTrust!=null) p.coachTrust = Math.max(0, Math.min(100, p.coachTrust+eff.coachTrust));
     if(eff.reputation!=null) p.reputation = Math.max(0, p.reputation+eff.reputation);
     if(eff.money!=null) p.money = Math.max(0, p.money+eff.money);
-    statKeys.forEach(k=>{
+    if(eff.starBucks!=null) p.starBucks = Math.max(0, p.starBucks+eff.starBucks);
+    // legacy effect names map onto the relationship model
+    if(eff.chemistry!=null) this.adjustRel("team", eff.chemistry);
+    if(eff.coachTrust!=null) this.adjustRel("boss", eff.coachTrust);
+    RELATIONSHIPS.forEach(r=>{ if(eff[r.id]!=null) this.adjustRel(r.id, eff[r.id]); });
+    STAT_KEYS.forEach(k=>{
       if(eff[k]!=null) p[k] = Math.max(20, Math.min(p.potential, p[k]+eff[k]));
     });
     if(choice.extraTraining){
@@ -357,10 +541,28 @@ const Career = {
   // fill in fields added after a save was created, so old saves keep working
   _migrate(){
     const p = this.state.player;
-    if(p.chemistry==null) p.chemistry = 50;
-    if(p.coachTrust==null) p.coachTrust = 50;
     if(p.lifestyle==null) p.lifestyle = {};
     if(this.state.pendingEvent===undefined) this.state.pendingEvent = null;
+    // older saves carried flat chemistry/coachTrust — fold them into the
+    // five-relationship model and seed the three new ones.
+    if(p.relationships==null){
+      p.relationships = {
+        boss: p.coachTrust!=null ? p.coachTrust : 50,
+        team: p.chemistry!=null ? p.chemistry : 50,
+        fans: Math.min(100, 25 + (p.reputation||0)*1.4),
+        partner: p.lifestyle && p.lifestyle.partner ? 60 : 50,
+        sponsors: 30,
+      };
+    }
+    delete p.chemistry; delete p.coachTrust;
+    if(p.starBucks==null) p.starBucks = 60;
+    if(p.boots==null) p.boots = "street";
+    if(p.inventory==null) p.inventory = {};
+    if(p.sponsors==null) p.sponsors = [];
+    if(p.workRate==null) p.workRate = "mid";
+    if(p.starMan==null) p.starMan = 0;
+    if(p.ratingsSum==null){ p.ratingsSum = 0; p.ratingsCount = 0; }
+    if(p.lastRating===undefined) p.lastRating = null;
   },
   hasSave(){
     return !!localStorage.getItem(SAVE_KEY);

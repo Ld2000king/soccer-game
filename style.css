@@ -435,3 +435,164 @@ body{
 .event-choice-btn{display:flex; flex-direction:column; gap:4px; align-items:center;}
 .event-hint{font-size:12px; font-weight:500; opacity:.85;}
 
+
+/* ===== Shared sub-screen chrome (hub, skills, shop, sponsors, casino) ===== */
+.sub-header{
+  flex-shrink:0; display:flex; align-items:center; gap:12px; padding:14px 20px;
+  background:var(--panel); border-bottom:1px solid #202a45;
+}
+.sub-header h2{margin:0; font-size:17px; flex:1;}
+.sub-wallet{
+  background:#0e1526; border:1px solid #202a45; border-radius:999px; padding:6px 12px;
+  font-size:12px; font-weight:800; color:var(--accent); white-space:nowrap;
+}
+.sub-note{flex-shrink:0; margin:12px 20px 0; font-size:12px; color:var(--text-dim); line-height:1.5;}
+.sub-tabs{flex-shrink:0; display:flex; gap:8px; padding:12px 20px 0;}
+.sub-tab{
+  flex:1; padding:8px; border-radius:10px; border:1px solid #2a3552; background:#0e1526;
+  color:var(--text-dim); font-weight:700; font-size:12px; cursor:pointer; font-family:inherit;
+}
+.sub-tab.active{background:var(--accent-2); color:#04231a; border-color:var(--accent-2);}
+
+/* ===== Hub tiles ===== */
+.hub-grid{
+  flex:1; min-height:0; overflow-y:auto; padding:16px 20px 30px;
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; align-content:start;
+}
+.hub-tile{
+  background:var(--panel); border:1px solid #202a45; border-radius:16px; padding:16px 12px;
+  display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer;
+  color:var(--text); font-family:inherit; text-align:center; transition:transform .15s ease, border-color .15s ease;
+}
+.hub-tile:hover{transform:translateY(-3px); border-color:var(--accent-2);}
+.hub-icon{font-size:28px;}
+.hub-name{font-weight:800; font-size:14px;}
+.hub-sub{font-size:10px; color:var(--text-dim); line-height:1.4;}
+
+/* ===== Star rating (5 relationships) ===== */
+.star-rating-value{color:var(--accent); font-weight:900;}
+.star-rating-row{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; flex-shrink:0;}
+.rel-chip{
+  display:flex; align-items:center; gap:4px; background:#0e1526; border:1px solid #202a45;
+  border-radius:999px; padding:3px 8px; font-size:10px;
+}
+.rel-bar{width:26px; height:4px; border-radius:3px; background:#1c2540; overflow:hidden;}
+.rel-fill{height:100%; border-radius:3px; background:linear-gradient(90deg,#8a7cff,#ff6fd8);}
+
+/* ===== Work rate / stake pickers ===== */
+.workrate-row, .stake-row{display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-shrink:0;}
+.stake-row{padding:12px 20px 0; margin-bottom:0;}
+.workrate-label{font-size:11px; color:var(--text-dim); font-weight:700; white-space:nowrap;}
+.workrate-picker{display:flex; gap:6px; flex:1;}
+.wr-btn{
+  flex:1; padding:6px 4px; border-radius:8px; border:1px solid #2a3552; background:#0e1526;
+  color:var(--text-dim); font-size:11px; font-weight:700; cursor:pointer; font-family:inherit;
+}
+.wr-btn.active{background:var(--accent); color:#1a1400; border-color:var(--accent);}
+
+/* ===== Skills upgrade list ===== */
+.skills-list{flex:1; min-height:0; overflow-y:auto; padding:14px 20px 30px; display:flex; flex-direction:column; gap:10px;}
+.skill-row{
+  background:var(--panel); border:1px solid #202a45; border-radius:14px; padding:12px 14px;
+  display:flex; align-items:center; gap:10px;
+}
+.skill-info{flex:1; min-width:0;}
+.skill-name{font-weight:700; font-size:13px; display:flex; align-items:center; gap:6px;}
+.skill-boost{font-size:10px; color:var(--accent-2); font-weight:700;}
+.skill-track{height:6px; background:#0e1526; border-radius:4px; overflow:hidden; margin-top:6px;}
+.skill-fill{height:100%; background:linear-gradient(90deg,var(--accent-2),var(--accent)); border-radius:4px; transition:width .4s ease;}
+.skill-val{font-weight:900; font-size:16px; width:34px; text-align:center;}
+.skill-buy{
+  border:none; border-radius:999px; padding:8px 12px; font-size:11px; font-weight:800; cursor:pointer;
+  background:var(--accent); color:#1a1400; font-family:inherit; white-space:nowrap;
+}
+.skill-buy:disabled{opacity:.35; cursor:not-allowed;}
+
+/* ===== Shop (boots + consumables) ===== */
+.shop-body{flex:1; min-height:0; overflow-y:auto; padding:14px 20px 30px;
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; align-content:start;}
+.shop-card{
+  background:var(--panel); border:2px solid #202a45; border-radius:14px; padding:12px;
+  display:flex; flex-direction:column; gap:6px;
+}
+.shop-card.equipped{border-color:var(--accent-2); background:rgba(0,224,168,.08);}
+.shop-name{font-weight:700; font-size:13px;}
+.shop-desc{font-size:11px; color:var(--text-dim); flex:1;}
+.shop-boosts{font-size:11px; color:var(--accent-2); font-weight:700;}
+.shop-cost{font-size:12px; font-weight:800; color:var(--accent);}
+.shop-owned{font-size:11px; color:var(--text-dim);}
+.shop-btn{
+  border:none; border-radius:999px; padding:8px; font-size:12px; font-weight:700; cursor:pointer;
+  background:var(--panel-2); color:var(--text); border:1px solid #2a3552; font-family:inherit;
+}
+.shop-btn:disabled{opacity:.4; cursor:not-allowed;}
+.shop-btn.use{background:var(--accent-2); color:#04231a; border-color:var(--accent-2);}
+
+/* ===== Sponsors ===== */
+.sponsors-list{flex:1; min-height:0; overflow-y:auto; padding:14px 20px 30px; display:flex; flex-direction:column; gap:10px;}
+.sponsor-card{
+  background:var(--panel); border:2px solid #202a45; border-radius:14px; padding:12px 14px;
+  display:flex; align-items:center; gap:12px;
+}
+.sponsor-card.signed{border-color:var(--accent-2); background:rgba(0,224,168,.08);}
+.sponsor-card.locked{opacity:.55;}
+.sponsor-icon{font-size:26px; flex-shrink:0;}
+.sponsor-info{flex:1; min-width:0;}
+.sponsor-name{font-weight:700; font-size:13px;}
+.sponsor-desc{font-size:11px; color:var(--text-dim); margin-top:2px;}
+.sponsor-terms{font-size:11px; color:var(--accent); font-weight:700; margin-top:4px;}
+
+/* ===== Casino ===== */
+.casino-body{flex:1; min-height:0; overflow-y:auto; padding:16px 20px 10px;}
+.casino-result{
+  flex-shrink:0; padding:12px 20px 24px; text-align:center; font-weight:800; font-size:14px; min-height:24px;
+}
+.casino-result.win{color:var(--accent-2);}
+.casino-result.lose{color:var(--text-dim);}
+.slot-reels{display:flex; gap:10px; justify-content:center; margin-bottom:18px;}
+.slot-reel{
+  width:76px; height:96px; background:#0e1526; border:2px solid #2a3552; border-radius:14px;
+  display:flex; align-items:center; justify-content:center; font-size:44px;
+}
+.slot-reel.spinning{animation:reelSpin .12s linear infinite;}
+@keyframes reelSpin{0%{transform:translateY(-6px); opacity:.55;} 50%{transform:translateY(6px); opacity:1;} 100%{transform:translateY(-6px); opacity:.55;}}
+.roulette-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px;}
+.roulette-bet{
+  padding:14px 6px; border-radius:12px; border:2px solid #2a3552; background:#0e1526;
+  color:var(--text); font-weight:800; font-size:13px; cursor:pointer; font-family:inherit;
+}
+.roulette-bet.red{background:rgba(210,31,60,.25); border-color:#d21f3c;}
+.roulette-bet.black{background:rgba(20,20,20,.6);}
+.roulette-bet.green{background:rgba(0,224,168,.2); border-color:var(--accent-2);}
+.roulette-wheel{
+  width:110px; height:110px; margin:0 auto 16px; border-radius:50%;
+  border:4px solid var(--accent); display:flex; align-items:center; justify-content:center;
+  font-size:34px; font-weight:900; background:#0e1526;
+}
+.roulette-wheel.spinning{animation:wheelSpin .5s linear infinite;}
+@keyframes wheelSpin{to{transform:rotate(360deg);}}
+.bj-hands{display:flex; flex-direction:column; gap:14px; margin-bottom:16px;}
+.bj-hand-label{font-size:12px; color:var(--text-dim); font-weight:700; margin-bottom:6px;}
+.bj-cards{display:flex; gap:6px; flex-wrap:wrap;}
+.bj-card{
+  width:42px; height:58px; background:#f4f6ff; color:#101a2c; border-radius:8px;
+  display:flex; align-items:center; justify-content:center; font-weight:900; font-size:17px;
+  box-shadow:0 3px 8px rgba(0,0,0,.4);
+}
+.bj-actions{display:flex; gap:10px;}
+.bj-actions .btn{flex:1;}
+
+/* ===== Career stats ===== */
+.career-stats-body{flex:1; min-height:0; overflow-y:auto; padding:16px 20px 30px; display:flex; flex-direction:column; gap:10px;}
+.cs-row{
+  background:var(--panel); border:1px solid #202a45; border-radius:12px; padding:12px 14px;
+  display:flex; justify-content:space-between; align-items:center; font-size:13px;
+}
+.cs-label{color:var(--text-dim);}
+.cs-value{font-weight:800; color:var(--accent);}
+
+/* ===== Match end summary ===== */
+.end-result{font-size:20px; font-weight:900; margin-bottom:8px;}
+.end-rating{font-size:15px; margin-bottom:8px;}
+.end-rating.star-man{color:var(--accent); font-weight:900;}
+.end-line{font-size:12px; color:var(--text-dim); margin-bottom:4px;}

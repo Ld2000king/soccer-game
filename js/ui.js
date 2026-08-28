@@ -61,6 +61,20 @@ function renderDashboard(){
   $("#hud-rep").textContent = p.reputation;
   $("#hud-money").textContent = p.money.toLocaleString();
   $("#hud-energy-text").textContent = p.energy;
+  $("#hud-starbucks").textContent = p.starBucks;
+
+  $("#star-rating-value").textContent = "★ " + Career.starRating().toFixed(1);
+  $("#star-rating-row").innerHTML = RELATIONSHIPS.map(r=>{
+    const v = Career.rel(r.id);
+    return `<div class="rel-chip" title="${r.label}">${r.icon}<div class="rel-bar"><div class="rel-fill" style="width:${v}%"></div></div></div>`;
+  }).join("");
+
+  $("#workrate-picker").innerHTML = WORK_RATES.map(w=>
+    `<button class="wr-btn ${w.id===p.workRate?'active':''}" data-wr="${w.id}" title="${w.desc}">${"❤".repeat(w.hearts)}</button>`
+  ).join("");
+  $$("#workrate-picker .wr-btn").forEach(b=>{
+    b.addEventListener("click", ()=>{ Career.setWorkRate(b.dataset.wr); renderDashboard(); });
+  });
   $("#hud-week").textContent = s.week;
   $("#hud-season").textContent = s.season;
 
@@ -75,24 +89,16 @@ function renderDashboard(){
   $("#btn-play-match").disabled = !fixture;
 
   // stats bars
-  const statLabels = {pace:"מהירות",shooting:"בעיטה",passing:"מסירה",dribbling:"כדרור",defending:"הגנה",physical:"כוח"};
   const bars = $("#stats-bars");
   bars.innerHTML = "";
-  Object.keys(statLabels).forEach(k=>{
+  STAT_KEYS.forEach(k=>{
+    const eff = Career.effectiveStat(k);
+    const bonus = Career.bootsBonus(k);
     const row = document.createElement("div");
     row.className = "stat-row";
-    row.innerHTML = `<div class="stat-label">${statLabels[k]}</div>
-      <div class="stat-track"><div class="stat-fill" style="width:${p[k]}%"></div></div>
-      <div class="stat-val">${p[k]}</div>`;
-    bars.appendChild(row);
-  });
-  const extraLabels = {chemistry:"כימיה", coachTrust:"אמון מאמן"};
-  Object.keys(extraLabels).forEach(k=>{
-    const row = document.createElement("div");
-    row.className = "stat-row";
-    row.innerHTML = `<div class="stat-label">${extraLabels[k]}</div>
-      <div class="stat-track"><div class="stat-fill" style="width:${p[k]}%; background:linear-gradient(90deg,#8a7cff,#ff6fd8)"></div></div>
-      <div class="stat-val">${p[k]}</div>`;
+    row.innerHTML = `<div class="stat-label">${STAT_LABELS[k]}</div>
+      <div class="stat-track"><div class="stat-fill" style="width:${eff}%"></div></div>
+      <div class="stat-val">${eff}${bonus?`<span class="skill-boost">+${bonus}</span>`:""}</div>`;
     bars.appendChild(row);
   });
 
@@ -182,6 +188,259 @@ function renderLifestyleScreen(){
     section.appendChild(grid);
     wrap.appendChild(section);
   });
+}
+
+// ---------- HUB & SUB-SCREENS ----------
+function renderHub(){
+  const p = Career.state.player;
+  $("#hub-money").textContent = p.money.toLocaleString();
+  $("#hub-sb").textContent = p.starBucks;
+}
+
+function renderSkills(){
+  const p = Career.state.player;
+  $("#skills-sb").textContent = p.starBucks;
+  const list = $("#skills-list");
+  list.innerHTML = "";
+  STAT_KEYS.forEach(k=>{
+    const base = p[k], eff = Career.effectiveStat(k), bonus = Career.bootsBonus(k);
+    const cost = Career.upgradeCost(k);
+    const maxed = base >= p.potential;
+    const row = document.createElement("div");
+    row.className = "skill-row";
+    row.innerHTML = `
+      <div class="skill-val">${eff}</div>
+      <div class="skill-info">
+        <div class="skill-name">${STAT_LABELS[k]}${bonus?`<span class="skill-boost">+${bonus} נעליים</span>`:""}</div>
+        <div class="skill-track"><div class="skill-fill" style="width:${(base/p.potential)*100}%"></div></div>
+      </div>
+      <button class="skill-buy" ${maxed || !Career.canUpgrade(k) ? "disabled" : ""}>
+        ${maxed ? "מקסימום" : `${cost} 💫`}
+      </button>`;
+    if(!maxed){
+      row.querySelector(".skill-buy").addEventListener("click", ()=>{
+        if(Career.upgradeSkill(k)) renderSkills();
+      });
+    }
+    list.appendChild(row);
+  });
+}
+
+let shopTab = "boots";
+function renderShop(){
+  const p = Career.state.player;
+  $("#shop-money").textContent = p.money.toLocaleString();
+  $$(".sub-tab[data-shoptab]").forEach(t=> t.classList.toggle("active", t.dataset.shoptab===shopTab));
+  const body = $("#shop-body");
+  body.innerHTML = "";
+
+  if(shopTab==="boots"){
+    BOOTS.forEach(b=>{
+      const equipped = p.boots===b.id;
+      const canAfford = p.money >= b.cost;
+      const boostText = Object.keys(b.boosts).map(k=>`${STAT_LABELS[k]} +${b.boosts[k]}`).join(" • ");
+      const card = document.createElement("div");
+      card.className = "shop-card" + (equipped ? " equipped" : "");
+      card.innerHTML = `
+        <div class="shop-name">👟 ${b.name}</div>
+        <div class="shop-desc">${b.desc}</div>
+        ${boostText ? `<div class="shop-boosts">${boostText}</div>` : ""}
+        <div class="shop-cost">${b.cost>0 ? b.cost.toLocaleString()+"₪" : "חינם"}</div>
+        <button class="shop-btn" ${equipped || !canAfford ? "disabled" : ""}>${equipped ? "נעול עכשיו" : "קנה ונעל"}</button>`;
+      if(!equipped){
+        card.querySelector(".shop-btn").addEventListener("click", ()=>{
+          if(Career.buyBoots(b.id)) renderShop();
+        });
+      }
+      body.appendChild(card);
+    });
+  } else {
+    CONSUMABLES.forEach(c=>{
+      const owned = p.inventory[c.id] || 0;
+      const canAfford = p.money >= c.cost;
+      const card = document.createElement("div");
+      card.className = "shop-card";
+      card.innerHTML = `
+        <div class="shop-name">${c.icon} ${c.name}</div>
+        <div class="shop-desc">${c.desc}</div>
+        <div class="shop-boosts">אנרגיה +${c.energy}${c.morale?` • מורל +${c.morale}`:""}</div>
+        <div class="shop-cost">${c.cost.toLocaleString()}₪</div>
+        <div class="shop-owned">במלאי: ${owned}</div>
+        <button class="shop-btn buy" ${!canAfford ? "disabled" : ""}>קנה</button>
+        <button class="shop-btn use" ${owned<1 || p.energy>=100 ? "disabled" : ""}>שתה עכשיו</button>`;
+      const [buyBtn, useBtn] = card.querySelectorAll(".shop-btn");
+      buyBtn.addEventListener("click", ()=>{ if(Career.buyConsumable(c.id)) renderShop(); });
+      useBtn.addEventListener("click", ()=>{ if(Career.useConsumable(c.id)) renderShop(); });
+      body.appendChild(card);
+    });
+  }
+}
+
+function renderSponsors(){
+  const p = Career.state.player;
+  $("#sponsor-income").textContent = Career.sponsorIncome().toLocaleString();
+  const list = $("#sponsors-list");
+  list.innerHTML = "";
+  SPONSORS.forEach(sp=>{
+    const signed = p.sponsors.includes(sp.id);
+    const locked = p.reputation < sp.reqReputation;
+    const card = document.createElement("div");
+    card.className = "sponsor-card" + (signed ? " signed" : locked ? " locked" : "");
+    card.innerHTML = `
+      <div class="sponsor-icon">${sp.icon}</div>
+      <div class="sponsor-info">
+        <div class="sponsor-name">${sp.name}</div>
+        <div class="sponsor-desc">${sp.desc}</div>
+        <div class="sponsor-terms">${sp.weekly.toLocaleString()}₪/שבוע • מענק ${sp.signBonus.toLocaleString()}₪</div>
+        ${locked ? `<div class="sponsor-desc">🔒 דרוש מוניטין ${sp.reqReputation} (יש לך ${p.reputation})</div>` : ""}
+      </div>
+      <button class="shop-btn" ${signed || locked ? "disabled" : ""}>${signed ? "חתום ✓" : "חתום"}</button>`;
+    if(!signed && !locked){
+      card.querySelector(".shop-btn").addEventListener("click", ()=>{
+        if(Career.signSponsor(sp.id)) renderSponsors();
+      });
+    }
+    list.appendChild(card);
+  });
+}
+
+function renderCareerStats(){
+  const p = Career.state.player;
+  const avg = Career.averageRating();
+  const rows = [
+    ["הופעות", p.appearances],
+    ["שערים", p.goals],
+    ["בישולים", p.assists],
+    ["שחקן המשחק", p.starMan],
+    ["ציון ממוצע", avg!=null ? avg : "—"],
+    ["ציון אחרון", p.lastRating!=null ? p.lastRating : "—"],
+    ["דירוג כוכב", "★ " + Career.starRating().toFixed(1)],
+    ["מוניטין", p.reputation],
+    ["שכר שבועי", p.wage.toLocaleString()+"₪"],
+    ["הכנסה מחסויות", Career.sponsorIncome().toLocaleString()+"₪/שבוע"],
+    ["תחזוקת לייף סטייל", Career.lifestyleUpkeep().toLocaleString()+"₪/שבוע"],
+  ];
+  $("#career-stats-body").innerHTML = rows.map(([l,v])=>
+    `<div class="cs-row"><span class="cs-label">${l}</span><span class="cs-value">${v}</span></div>`
+  ).join("") + RELATIONSHIPS.map(r=>
+    `<div class="cs-row"><span class="cs-label">${r.icon} ${r.label}</span><span class="cs-value">${Career.rel(r.id)}</span></div>`
+  ).join("");
+}
+
+// ---------- CASINO ----------
+let casinoTab = "slots";
+function renderCasino(){
+  const p = Career.state.player;
+  $("#casino-money").textContent = p.money.toLocaleString();
+  $$(".sub-tab[data-casinotab]").forEach(t=> t.classList.toggle("active", t.dataset.casinotab===casinoTab));
+
+  $("#stake-picker").innerHTML = Casino.stakes().map(v=>
+    `<button class="wr-btn ${v===Casino.stake?'active':''}" data-stake="${v}">${v.toLocaleString()}₪</button>`
+  ).join("");
+  $$("#stake-picker .wr-btn").forEach(b=>{
+    b.addEventListener("click", ()=>{ Casino.setStake(+b.dataset.stake); renderCasino(); });
+  });
+
+  const body = $("#casino-body");
+  const canBet = Casino.canBet();
+  if(casinoTab==="slots"){
+    body.innerHTML = `
+      <div class="slot-reels">
+        <div class="slot-reel" id="reel0">⚽</div>
+        <div class="slot-reel" id="reel1">🏆</div>
+        <div class="slot-reel" id="reel2">⭐</div>
+      </div>
+      <button id="btn-spin" class="btn btn-primary btn-lg" ${canBet?"":"disabled"}>סובב! (${Casino.stake.toLocaleString()}₪)</button>`;
+    $("#btn-spin").addEventListener("click", playSlots);
+  } else if(casinoTab==="roulette"){
+    body.innerHTML = `
+      <div class="roulette-wheel" id="wheel">?</div>
+      <div class="roulette-grid">
+        <button class="roulette-bet red" data-bet="red">אדום ×2</button>
+        <button class="roulette-bet green" data-bet="green">0 ×36</button>
+        <button class="roulette-bet black" data-bet="black">שחור ×2</button>
+      </div>`;
+    $$(".roulette-bet").forEach(b=>{
+      b.disabled = !canBet;
+      b.addEventListener("click", ()=> playRoulette(b.dataset.bet));
+    });
+  } else {
+    const b = Casino.bj;
+    if(!b){
+      body.innerHTML = `<button id="btn-deal" class="btn btn-primary btn-lg" ${canBet?"":"disabled"}>חלק קלפים (${Casino.stake.toLocaleString()}₪)</button>`;
+      $("#btn-deal").addEventListener("click", ()=>{ Casino.newBlackjackHand(); $("#casino-result").textContent=""; renderCasino(); });
+    } else {
+      const st = Casino.bjState();
+      const cards = arr => arr.map(c=>`<div class="bj-card">${Casino.cardLabel(c)}</div>`).join("");
+      body.innerHTML = `
+        <div class="bj-hands">
+          <div><div class="bj-hand-label">הדילר (${st.done?st.dealerValue:"?"})</div>
+            <div class="bj-cards">${st.done ? cards(st.dealer) : `<div class="bj-card">${Casino.cardLabel(st.dealer[0])}</div><div class="bj-card">?</div>`}</div></div>
+          <div><div class="bj-hand-label">אתה (${st.playerValue})</div>
+            <div class="bj-cards">${cards(st.player)}</div></div>
+        </div>
+        <div class="bj-actions">
+          ${st.done
+            ? `<button id="btn-newhand" class="btn btn-primary">יד חדשה</button>`
+            : `<button id="btn-hit" class="btn btn-secondary">עוד קלף</button>
+               <button id="btn-stand" class="btn btn-primary">עוצר</button>`}
+        </div>`;
+      if(st.done){
+        $("#btn-newhand").addEventListener("click", ()=>{
+          if(!Casino.canBet()){ Casino.bj=null; renderCasino(); return; }
+          Casino.newBlackjackHand(); $("#casino-result").textContent=""; renderCasino();
+        });
+      } else {
+        $("#btn-hit").addEventListener("click", ()=>{ const r=Casino.bjHit(); renderCasino(); if(r.done) showCasinoResult(Casino.bj.result, false); });
+        $("#btn-stand").addEventListener("click", ()=>{ Casino.bjStand(); renderCasino(); showCasinoResult(Casino.bj.result, false); });
+      }
+    }
+  }
+}
+
+function showCasinoResult(text, won){
+  const el = $("#casino-result");
+  el.textContent = text;
+  el.className = "casino-result " + (won ? "win" : "lose");
+  renderDashboardIfVisible();
+}
+
+function renderDashboardIfVisible(){
+  if($("#screen-dashboard").classList.contains("active")) renderDashboard();
+}
+
+function playSlots(){
+  const reels = [$("#reel0"), $("#reel1"), $("#reel2")];
+  reels.forEach(r=> r.classList.add("spinning"));
+  $("#casino-result").textContent = "";
+  const res = Casino.spinSlots();
+  reels.forEach((r,i)=>{
+    setTimeout(()=>{
+      r.classList.remove("spinning");
+      r.textContent = res.reels[i];
+      if(i===2){
+        $("#casino-money").textContent = Career.state.player.money.toLocaleString();
+        showCasinoResult(res.label, res.won);
+        const btn = $("#btn-spin");
+        if(btn) btn.disabled = !Casino.canBet();
+      }
+    }, 400 + i*350);
+  });
+}
+
+function playRoulette(betType){
+  const wheel = $("#wheel");
+  wheel.classList.add("spinning");
+  $("#casino-result").textContent = "";
+  const res = Casino.spinRoulette(betType);
+  setTimeout(()=>{
+    wheel.classList.remove("spinning");
+    wheel.textContent = res.number;
+    wheel.style.borderColor = res.color==="green" ? "#00e0a8" : res.color==="red" ? "#d21f3c" : "#888";
+    $("#casino-money").textContent = Career.state.player.money.toLocaleString();
+    showCasinoResult(res.label, res.won);
+    $$(".roulette-bet").forEach(b=> b.disabled = !Casino.canBet());
+  }, 1200);
 }
 
 // ---------- TRAINING ----------
@@ -316,11 +575,42 @@ document.addEventListener("DOMContentLoaded", ()=>{
   $("#btn-train").addEventListener("click", startTrainingFlow);
   $("#btn-timing-hit").addEventListener("click", resolveTraining);
 
-  $("#btn-lifestyle").addEventListener("click", ()=>{
-    renderLifestyleScreen();
-    showScreen("screen-lifestyle");
+  // hub + sub-screen navigation
+  const SCREEN_RENDERERS = {
+    "screen-hub": renderHub,
+    "screen-skills": renderSkills,
+    "screen-shop": renderShop,
+    "screen-sponsors": renderSponsors,
+    "screen-casino": renderCasino,
+    "screen-career-stats": renderCareerStats,
+    "screen-lifestyle": renderLifestyleScreen,
+  };
+  function openScreen(id){
+    const render = SCREEN_RENDERERS[id];
+    if(render) render();
+    showScreen(id);
+  }
+
+  $("#btn-hub").addEventListener("click", ()=> openScreen("screen-hub"));
+  $$(".hub-tile[data-goto]").forEach(t=>{
+    t.addEventListener("click", ()=> openScreen(t.dataset.goto));
   });
-  $("#btn-lifestyle-back").addEventListener("click", goDashboard);
+  // every sub-screen's back arrow returns to the hub, except the hub itself
+  $$("[data-back]").forEach(b=>{
+    const screen = b.closest(".screen");
+    b.addEventListener("click", ()=>{
+      if(screen && screen.id==="screen-hub") goDashboard();
+      else openScreen("screen-hub");
+    });
+  });
+  $("#btn-lifestyle-back").addEventListener("click", ()=> openScreen("screen-hub"));
+
+  $$(".sub-tab[data-shoptab]").forEach(t=>{
+    t.addEventListener("click", ()=>{ shopTab = t.dataset.shoptab; renderShop(); });
+  });
+  $$(".sub-tab[data-casinotab]").forEach(t=>{
+    t.addEventListener("click", ()=>{ casinoTab = t.dataset.casinotab; Casino.bj = null; $("#casino-result").textContent=""; renderCasino(); });
+  });
 
   $("#btn-rest").addEventListener("click", ()=>{
     Career.rest();

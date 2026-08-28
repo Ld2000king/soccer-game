@@ -41,6 +41,9 @@ const NEWS_TEMPLATES = {
   contract:["{name} חתם על חוזה חדש עם {club}."],
 };
 
+const STAT_KEYS = ["pace","shooting","passing","dribbling","defending","physical"];
+const STAT_LABELS = {pace:"מהירות",shooting:"בעיטה",passing:"מסירה",dribbling:"כדרור",defending:"הגנה",physical:"כוח"};
+
 function randPick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
 // ===== Between-match life decisions =====
@@ -325,4 +328,58 @@ const LIFESTYLE_CATEGORIES = [
         flavor:"כל הארץ צפתה בטקס בשידור חי." },
     ],
   },
+];
+
+// ===== Relationships (Boss / Team / Fans / Partner / Sponsors) =====
+// Each sits 0..100; their average drives the overall Star Rating.
+const RELATIONSHIPS = [
+  { id:"boss",     label:"מאמן",   icon:"👔" },
+  { id:"team",     label:"קבוצה",  icon:"🤝" },
+  { id:"fans",     label:"אוהדים", icon:"📣" },
+  { id:"partner",  label:"זוגיות", icon:"❤️" },
+  { id:"sponsors", label:"חסויות", icon:"💼" },
+];
+
+// ===== Work rate: more effort = more chances on the ball, but drains energy =====
+const WORK_RATES = [
+  { id:"low",  label:"חסכוני",  hearts:1, momentBonus:-1, energyCost:18, desc:"פחות מגע בכדור, שומר כוחות." },
+  { id:"mid",  label:"מאוזן",   hearts:2, momentBonus:0,  energyCost:30, desc:"איזון בין הזדמנויות לכוחות." },
+  { id:"high", label:"מלא גז",  hearts:3, momentBonus:2,  energyCost:46, desc:"הרבה יותר הזדמנויות — ותסיים מותש." },
+];
+
+// ===== Skill upgrades bought with Star Bucks =====
+// Cost climbs with the stat's current value, so late upgrades really cost.
+function skillUpgradeCost(currentValue){
+  return Math.round(8 + Math.pow(Math.max(0, currentValue - 40), 1.55));
+}
+
+// ===== Boots: one pair equipped, permanently boosts stats while worn =====
+const BOOTS = [
+  { id:"street",   name:"נעליים משומשות",     cost:0,      boosts:{},                              desc:"מה שהיה בארון." },
+  { id:"starter",  name:"סטארטר טורף",        cost:2500,   boosts:{pace:2},                        desc:"קלות, נוחות, כלום מיוחד." },
+  { id:"striker",  name:"סטרייקר פרו",        cost:9000,   boosts:{shooting:4, pace:1},            desc:"בנויות לגמור מהלכים." },
+  { id:"playmaker",name:"פלייmaker אליט",     cost:9000,   boosts:{passing:4, dribbling:1},        desc:"לשחקנים שרואים את המגרש." },
+  { id:"anchor",   name:"אנקור דיפנס",        cost:9000,   boosts:{defending:4, physical:1},       desc:"אף אחד לא עובר." },
+  { id:"speedster",name:"ספידסטר קרבון",      cost:26000,  boosts:{pace:6, dribbling:2},           desc:"כמו לרוץ על ענן." },
+  { id:"phantom",  name:"פנטום פרו אליט",     cost:60000,  boosts:{shooting:5, passing:5, dribbling:5}, desc:"נעלי הדגל של הליגה." },
+  { id:"golden",   name:"נעלי זהב מותאמות",   cost:180000, boosts:{pace:6, shooting:6, passing:6, dribbling:6, defending:4, physical:4}, desc:"תפורות בדיוק עלייך. בזהב." },
+];
+
+// ===== Consumables: one-shot boosts used before a match =====
+const CONSUMABLES = [
+  { id:"water",   name:"בקבוק מים",        icon:"💧", cost:50,    energy:15, desc:"פשוט, זול, עובד." },
+  { id:"nrg",     name:"משקה אנרגיה",      icon:"⚡", cost:400,   energy:45, desc:"הקלאסיקה של יום משחק." },
+  { id:"gel",     name:"ג'ל פחמימות",      icon:"🍯", cost:900,   energy:70, desc:"דלק טהור לתשעים דקות." },
+  { id:"shake",   name:"שייק חלבון יוקרתי",icon:"🥤", cost:2200,  energy:100, morale:5, desc:"ממלא אותך לגמרי." },
+  { id:"massage", name:"עיסוי ספורטאים",   icon:"💆", cost:3500,  energy:60, morale:12, desc:"הגוף והראש חוזרים לעצמם." },
+];
+
+// ===== Sponsorship deals: weekly income, but each demands a reputation level =====
+const SPONSORS = [
+  { id:"local_pizza", name:"פיצריית השכונה",     icon:"🍕", reqReputation:0,   weekly:120,   signBonus:500,    desc:"שלט קטן בכניסה. כולם מתחילים איפשהו." },
+  { id:"gym",         name:"רשת חדרי כושר",       icon:"🏋️", reqReputation:15,  weekly:400,   signBonus:2000,   desc:"הפנים שלך על הקיר בכל סניף." },
+  { id:"soda",        name:"משקה קל פופולרי",     icon:"🥤", reqReputation:30,  weekly:1100,  signBonus:8000,   desc:"פרסומת אחת בשנה, המון כסף." },
+  { id:"sportswear",  name:"מותג ביגוד ספורט",    icon:"👕", reqReputation:50,  weekly:3000,  signBonus:25000,  desc:"קולקציה על שמך." },
+  { id:"watch",       name:"בית שעונים שווייצרי", icon:"⌚", reqReputation:75,  weekly:6500,  signBonus:70000,  desc:"אתה עכשיו 'שגריר המותג'." },
+  { id:"global_car",  name:"יצרנית רכב עולמית",   icon:"🚘", reqReputation:110, weekly:15000, signBonus:200000, desc:"קמפיין בינלאומי. אתה הפנים." },
 ];
