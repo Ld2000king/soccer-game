@@ -129,13 +129,21 @@
     <div id="minigame-overlay" class="minigame-overlay hidden">
       <div class="minigame-box">
         <h3 id="minigame-title">רגע מכריע!</h3>
-        <div class="timing-wrap">
-          <div id="match-timing-track" class="timing-track">
-            <div id="match-timing-zone" class="timing-zone"></div>
-            <div id="match-timing-marker" class="timing-marker"></div>
+
+        <div id="timing-mode" class="hidden">
+          <div class="timing-wrap">
+            <div id="match-timing-track" class="timing-track">
+              <div id="match-timing-zone" class="timing-zone"></div>
+              <div id="match-timing-marker" class="timing-marker"></div>
+            </div>
           </div>
+          <button id="btn-match-timing-hit" class="btn btn-primary btn-lg">עכשיו!</button>
         </div>
-        <button id="btn-match-timing-hit" class="btn btn-primary btn-lg">עכשיו!</button>
+
+        <div id="aim-mode" class="hidden">
+          <canvas id="aim-canvas" width="320" height="220"></canvas>
+          <p id="aim-hint" class="aim-hint">גע ברשת כדי לבחור כיוון</p>
+        </div>
       </div>
     </div>
 
@@ -158,10 +166,30 @@
     </div>
   </section>
 
+  <!-- ===== אירוע חיים / החלטה ===== -->
+  <section id="screen-event" class="screen">
+    <div class="panel event-panel">
+      <div id="event-icon" class="event-icon">🎉</div>
+      <h2 id="event-title">החלטה</h2>
+      <p id="event-desc" class="training-desc"></p>
+      <div class="event-choices">
+        <button id="btn-event-a" class="btn btn-primary btn-lg event-choice-btn">
+          <span id="event-a-label">אפשרות א׳</span>
+          <span id="event-a-hint" class="event-hint"></span>
+        </button>
+        <button id="btn-event-b" class="btn btn-secondary btn-lg event-choice-btn">
+          <span id="event-b-label">אפשרות ב׳</span>
+          <span id="event-b-hint" class="event-hint"></span>
+        </button>
+      </div>
+    </div>
+  </section>
+
 </div>
 
 <script src="js/data.js"></script>
 <script src="js/engine.js"></script>
+<script src="js/aim.js"></script>
 <script src="js/career.js"></script>
 <script src="js/match.js"></script>
 <script src="js/ui.js"></script>

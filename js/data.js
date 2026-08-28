@@ -42,3 +42,71 @@ const NEWS_TEMPLATES = {
 };
 
 function randPick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+// ===== Between-match life decisions =====
+// Each choice nudges energy/morale plus two hidden relationship stats:
+// chemistry (how much your teammates look for you / set you up) and
+// coachTrust (how much the coach trusts you with minutes).
+const LIFE_EVENTS = [
+  {
+    id:"party",
+    icon:"🎉",
+    title:"מסיבה עם החברים מהקבוצה",
+    desc:"כמה שחקנים מהקבוצה מתארגנים למסיבה הערב ומזמינים אותך. המשחק הבא כבר מחר בערב...",
+    a:{ label:"מצטרף למסיבה!", hint:"אנרגיה ⬇ • כימיה עם הקבוצה ⬆ • אמון המאמן ⬇",
+        effects:{energy:-20, morale:8, chemistry:8, coachTrust:-6},
+        news:"{name} נראה חוגג עם חברי הקבוצה — האווירה במלתחה השתפרה." },
+    b:{ label:"נשאר להתמקד במשחק", hint:"אנרגיה ⬆ • כימיה ⬇ • אמון המאמן ⬆",
+        effects:{energy:5, morale:-3, chemistry:-5, coachTrust:8},
+        news:"{name} ויתר על הבילוי כדי להתמקד — המאמן שם לב לרצינות." },
+  },
+  {
+    id:"interview",
+    icon:"🎤",
+    title:"בקשת ראיון מהתקשורת",
+    desc:"כתב ספורטיבי מבקש ראיון בלעדי איתך על הקריירה שלך. זה יעלה את הפרופיל שלך, אבל יגזול זמן מנוחה.",
+    a:{ label:"לתת את הראיון", hint:"תדמית ⬆ • כסף קטן ⬆ • אנרגיה ⬇",
+        effects:{energy:-8, reputation:2, money:400},
+        news:"הראיון של {name} התפרסם וזכה לתשומת לב רבה." },
+    b:{ label:"לסרב בנימוס", hint:"אנרגיה ⬆",
+        effects:{energy:6},
+        news:"{name} העדיף לשמור על פרופיל נמוך השבוע." },
+  },
+  {
+    id:"extra_training",
+    icon:"🏃",
+    title:"אימון בוקר וולונטרי",
+    desc:"המאמן הציע אימון בוקר נוסף למי שרוצה להתפתח מהר יותר. זה כואב, אבל משתלם.",
+    a:{ label:"להגיע לאימון הנוסף", hint:"יכולת אקראית ⬆ • אנרגיה ⬇⬇",
+        effects:{energy:-15, coachTrust:4},
+        extraTraining:true,
+        news:"{name} השקיע אימון בוקר נוסף מיוזמתו." },
+    b:{ label:"לנוח כרגיל", hint:"אנרגיה ⬆",
+        effects:{energy:8},
+        news:"{name} בחר לשמור על כוחות למשחק." },
+  },
+  {
+    id:"charity",
+    icon:"❤️",
+    title:"ביקור עמותת ילדים",
+    desc:"המועדון מארגן ביקור בבית חולים לילדים ומחפש שחקנים שיגיעו לחזק.",
+    a:{ label:"להגיע ולחזק", hint:"תדמית ⬆ • מורל ⬆ • כימיה ⬆ • אנרגיה ⬇",
+        effects:{energy:-6, morale:6, reputation:2, chemistry:4},
+        news:"{name} ביקר בבית החולים וקיבל אהבה מהאוהדים." },
+    b:{ label:"להעדיף מנוחה", hint:"אנרגיה ⬆",
+        effects:{energy:6},
+        news:"{name} העדיף לנוח השבוע." },
+  },
+  {
+    id:"sponsor_vip",
+    icon:"🥂",
+    title:"ערב VIP עם ספונסר פוטנציאלי",
+    desc:"הסוכן שלך מתקשר: יש הזדמנות לערב VIP עם נותן חסות שמתעניין בך. זה יעלה כסף, אבל המאמן מצפה למחויבות מלאה השבוע.",
+    a:{ label:"להשתתף בערב", hint:"כסף ⬆ • תדמית ⬆ • אנרגיה ⬇ • אמון המאמן ⬇",
+        effects:{energy:-12, money:800, reputation:2, coachTrust:-4},
+        news:"{name} נראה בערב VIP יוקרתי עם נותן חסות פוטנציאלי." },
+    b:{ label:"להישאר מקצועי", hint:"אמון המאמן ⬆",
+        effects:{coachTrust:6},
+        news:"{name} דחה אירועים חיצוניים כדי להתמקד בקבוצה." },
+  },
+];

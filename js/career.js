@@ -17,6 +17,7 @@ const Career = {
         ...base,
         potential: 70 + Math.floor(Math.random()*25),
         energy:100, morale:75, reputation:5,
+        chemistry:50, coachTrust:50,
         money:5000, wage:400,
         clubId, contractWeeks: 52,
         goals:0, assists:0, appearances:0, form:0,
@@ -27,6 +28,7 @@ const Career = {
       fixtures: [], // list of {round, home, away}
       news: [],
       pendingTransfer: null,
+      pendingEvent: null,
     };
     CLUBS.forEach(c=> this.state.table[c.id] = {p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0});
     this._genFixtures();
@@ -138,6 +140,42 @@ const Career = {
     if(this.state.week > totalRounds){
       this._endOfSeason();
     }
+    if(!this.state.pendingTransfer && Math.random()<0.4){
+      this._maybeTriggerEvent();
+    }
+    this.save();
+  },
+
+  // ---- Random life decisions between matches ----
+  _maybeTriggerEvent(){
+    this.state.pendingEvent = { eventId: randPick(LIFE_EVENTS).id };
+  },
+
+  currentEvent(){
+    if(!this.state.pendingEvent) return null;
+    return LIFE_EVENTS.find(e=>e.id===this.state.pendingEvent.eventId);
+  },
+
+  resolveEvent(choiceKey){ // "a" or "b"
+    const event = this.currentEvent();
+    if(!event) return;
+    const choice = event[choiceKey];
+    const p = this.state.player;
+    const eff = choice.effects || {};
+    if(eff.energy!=null) p.energy = Math.max(0, Math.min(100, p.energy+eff.energy));
+    if(eff.morale!=null) p.morale = Math.max(0, Math.min(100, p.morale+eff.morale));
+    if(eff.chemistry!=null) p.chemistry = Math.max(0, Math.min(100, p.chemistry+eff.chemistry));
+    if(eff.coachTrust!=null) p.coachTrust = Math.max(0, Math.min(100, p.coachTrust+eff.coachTrust));
+    if(eff.reputation!=null) p.reputation = Math.max(0, p.reputation+eff.reputation);
+    if(eff.money!=null) p.money = Math.max(0, p.money+eff.money);
+    if(choice.extraTraining){
+      const statKeys = ["pace","shooting","passing","dribbling","defending","physical"];
+      const stat = randPick(statKeys);
+      const gain = 1+Math.floor(Math.random()*2);
+      p[stat] = Math.min(p.potential, p[stat]+gain);
+    }
+    if(choice.news) this.addNews(choice.news.replace("{name}", p.name));
+    this.state.pendingEvent = null;
     this.save();
   },
 
@@ -204,8 +242,17 @@ const Career = {
       const raw = localStorage.getItem(SAVE_KEY);
       if(!raw) return false;
       this.state = JSON.parse(raw);
+      this._migrate();
       return true;
     }catch(e){ return false; }
+  },
+
+  // fill in fields added after a save was created, so old saves keep working
+  _migrate(){
+    const p = this.state.player;
+    if(p.chemistry==null) p.chemistry = 50;
+    if(p.coachTrust==null) p.coachTrust = 50;
+    if(this.state.pendingEvent===undefined) this.state.pendingEvent = null;
   },
   hasSave(){
     return !!localStorage.getItem(SAVE_KEY);

@@ -112,7 +112,8 @@ const MatchController = {
     for(let i=0;i<bgHomeGoals;i++) events.push({minute:randMinute(), kind:"bg", side:"home"});
     for(let i=0;i<bgAwayGoals;i++) events.push({minute:randMinute(), kind:"bg", side:"away"});
 
-    const numKeyMoments = 4;
+    const coachTrust = p.coachTrust!=null ? p.coachTrust : 50;
+    const numKeyMoments = Math.max(2, Math.min(5, Math.round(2 + coachTrust/33)));
     for(let i=0;i<numKeyMoments;i++){
       const type = this.pickKeyType(p.position);
       events.push({minute:randMinute(), kind:"key", type});
@@ -176,30 +177,52 @@ const MatchController = {
   },
 
   _resolveKeyMoment(ev){
-    const ctx = this.ctx;
+    const ctx = this.ctx, p = ctx.p;
     const titles = {
-      shoot:"הזדמנות סיום! תזמן את הבעיטה",
+      shoot:"הזדמנות סיום! בחר לאן לבעוט",
       pass:"מסירה חדה לרשת! תזמן את המסירה",
       defend:"התקפה מסוכנת עלייך להתערב!",
-      save:"בעיטה לעברך! תזמן את ההצלה",
+      save:"בעיטה לעברך! בחר לאן לצלול",
     };
     $("#minigame-title").textContent = `${ctx.minute}' — ${titles[ev.type]}`;
     $("#minigame-overlay").classList.remove("hidden");
 
-    const bar = new TimingBar($("#match-timing-track"), $("#match-timing-zone"), $("#match-timing-marker"));
-    const zoneWidth = ev.type==="defend" || ev.type==="save" ? 30 : 20;
-    bar.setZone(zoneWidth, 30+Math.random()*40);
-    bar.speed = 1.6 + Career.overall()/100;
-    bar.start();
+    if(ev.type==="shoot" || ev.type==="save"){
+      $("#timing-mode").classList.add("hidden");
+      $("#aim-mode").classList.remove("hidden");
 
-    const btn = $("#btn-match-timing-hit");
-    const handler = ()=>{
-      btn.removeEventListener("click", handler);
-      const score = bar.hit();
-      $("#minigame-overlay").classList.add("hidden");
-      this._applyKeyResult(ev.type, score);
-    };
-    btn.addEventListener("click", handler);
+      const heroSkill = Career.overall() + p.reputation/4;
+      const oppClub = ctx.myIsHome ? ctx.awayClub : ctx.homeClub;
+      const mode = ev.type==="shoot" ? "shoot" : "save";
+      const attackerSkill = mode==="shoot" ? heroSkill : oppClub.rating;
+      const keeperSkill = mode==="shoot" ? oppClub.rating : heroSkill;
+
+      const aim = new AimShootout($("#aim-canvas"), $("#aim-hint"), mode, {attackerSkill, keeperSkill});
+      aim.start((score)=>{
+        aim.stop();
+        $("#minigame-overlay").classList.add("hidden");
+        this._applyKeyResult(ev.type, score);
+      });
+    } else {
+      $("#aim-mode").classList.add("hidden");
+      $("#timing-mode").classList.remove("hidden");
+
+      const bar = new TimingBar($("#match-timing-track"), $("#match-timing-zone"), $("#match-timing-marker"));
+      const chemistry = p.chemistry!=null ? p.chemistry : 50;
+      const zoneWidth = ev.type==="defend" ? 30 : Math.max(10, Math.min(34, 20 + (chemistry-50)/5));
+      bar.setZone(zoneWidth, 30+Math.random()*40);
+      bar.speed = 1.6 + Career.overall()/100;
+      bar.start();
+
+      const btn = $("#btn-match-timing-hit");
+      const handler = ()=>{
+        btn.removeEventListener("click", handler);
+        const score = bar.hit();
+        $("#minigame-overlay").classList.add("hidden");
+        this._applyKeyResult(ev.type, score);
+      };
+      btn.addEventListener("click", handler);
+    }
   },
 
   _applyKeyResult(type, score){

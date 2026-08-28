@@ -86,6 +86,15 @@ function renderDashboard(){
       <div class="stat-val">${p[k]}</div>`;
     bars.appendChild(row);
   });
+  const extraLabels = {chemistry:"כימיה", coachTrust:"אמון מאמן"};
+  Object.keys(extraLabels).forEach(k=>{
+    const row = document.createElement("div");
+    row.className = "stat-row";
+    row.innerHTML = `<div class="stat-label">${extraLabels[k]}</div>
+      <div class="stat-track"><div class="stat-fill" style="width:${p[k]}%; background:linear-gradient(90deg,#8a7cff,#ff6fd8)"></div></div>
+      <div class="stat-val">${p[k]}</div>`;
+    bars.appendChild(row);
+  });
 
   // league table
   const rows = Career.sortedTable();
@@ -109,8 +118,26 @@ function goDashboard(){
     showScreen("screen-transfer");
     return;
   }
+  if(Career.state.pendingEvent){
+    renderEventScreen();
+    showScreen("screen-event");
+    return;
+  }
   renderDashboard();
   showScreen("screen-dashboard");
+}
+
+// ---------- LIFE EVENT ----------
+function renderEventScreen(){
+  const event = Career.currentEvent();
+  if(!event){ goDashboard(); return; }
+  $("#event-icon").textContent = event.icon;
+  $("#event-title").textContent = event.title;
+  $("#event-desc").textContent = event.desc;
+  $("#event-a-label").textContent = event.a.label;
+  $("#event-a-hint").textContent = event.a.hint;
+  $("#event-b-label").textContent = event.b.label;
+  $("#event-b-hint").textContent = event.b.hint;
 }
 
 // ---------- TRAINING ----------
@@ -224,6 +251,15 @@ document.addEventListener("DOMContentLoaded", ()=>{
 
   $("#btn-skip-transfer").addEventListener("click", ()=>{
     Career.skipTransfer();
+    goDashboard();
+  });
+
+  $("#btn-event-a").addEventListener("click", ()=>{
+    Career.resolveEvent("a");
+    goDashboard();
+  });
+  $("#btn-event-b").addEventListener("click", ()=>{
+    Career.resolveEvent("b");
     goDashboard();
   });
 });

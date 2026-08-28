@@ -194,3 +194,20 @@ body{
 @keyframes popIn{from{transform:scale(.85); opacity:0;} to{transform:scale(1); opacity:1;}}
 
 /* Particles / crowd handled on canvas */
+
+.hidden{display:none !important;}
+
+/* ===== Aim minigame ===== */
+#aim-canvas{
+  display:block; width:100%; max-width:320px; height:auto; margin:0 auto;
+  border-radius:12px; border:1px solid #2a3552; touch-action:none; cursor:pointer;
+}
+.aim-hint{margin-top:14px; font-size:14px; font-weight:700; color:var(--text-dim); min-height:20px;}
+
+/* ===== Life event screen ===== */
+.event-panel{text-align:center;}
+.event-icon{font-size:48px; margin-bottom:6px;}
+.event-choices{display:flex; flex-direction:column; gap:12px; margin-top:22px;}
+.event-choice-btn{display:flex; flex-direction:column; gap:4px; align-items:center;}
+.event-hint{font-size:12px; font-weight:500; opacity:.85;}
+
