@@ -262,4 +262,15 @@ document.addEventListener("DOMContentLoaded", ()=>{
     Career.resolveEvent("b");
     goDashboard();
   });
+
+  $$(".dash-tab").forEach(tab=>{
+    tab.addEventListener("click", ()=>{
+      $$(".dash-tab").forEach(t=>t.classList.remove("active"));
+      tab.classList.add("active");
+      const which = tab.dataset.tab;
+      $$(".card-table, .card-news").forEach(card=>{
+        card.classList.toggle("panel-active", card.dataset.panel===which);
+      });
+    });
+  });
 });

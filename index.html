@@ -2,8 +2,18 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Star Striker — קריירת כדורגל</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0f1a">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Star Striker">
+
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -84,12 +94,17 @@
         <div id="stats-bars" class="stats-bars"></div>
       </div>
 
-      <div class="card card-table">
+      <div class="dash-tabs">
+        <button class="dash-tab active" data-tab="table">טבלה</button>
+        <button class="dash-tab" data-tab="news">עדכונים</button>
+      </div>
+
+      <div class="card card-table panel-active" data-panel="table">
         <h3>טבלת הליגה</h3>
         <div id="league-table" class="league-table"></div>
       </div>
 
-      <div class="card card-news">
+      <div class="card card-news" data-panel="news">
         <h3>עדכונים</h3>
         <div id="news-feed" class="news-feed"></div>
       </div>
