@@ -323,7 +323,7 @@ function renderCareerStats(){
   $("#career-stats-body").innerHTML = rows.map(([l,v])=>
     `<div class="cs-row"><span class="cs-label">${l}</span><span class="cs-value">${v}</span></div>`
   ).join("") + RELATIONSHIPS.map(r=>
-    `<div class="cs-row"><span class="cs-label">${r.icon} ${r.label}</span><span class="cs-value">${Career.rel(r.id)}</span></div>`
+    `<div class="cs-row"><span class="cs-label">${r.icon} ${r.label}</span><span class="cs-value">${Math.round(Career.rel(r.id))}</span></div>`
   ).join("");
 }
 
