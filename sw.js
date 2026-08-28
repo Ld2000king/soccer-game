@@ -1,4 +1,4 @@
-const CACHE_NAME = "star-striker-v2";
+const CACHE_NAME = "star-striker-v3";
 const ASSETS = [
   "./",
   "./index.html",
@@ -7,6 +7,7 @@ const ASSETS = [
   "./js/data.js",
   "./js/engine.js",
   "./js/aim.js",
+  "./js/dribble.js",
   "./js/career.js",
   "./js/match.js",
   "./js/ui.js",
@@ -29,19 +30,18 @@ self.addEventListener("activate", (event)=>{
   );
 });
 
-// cache-first for our own static assets, network otherwise
+// network-first for our own app files, so a new deploy is picked up on the
+// next load instead of being stuck behind a stale cache; falls back to the
+// cache only when offline.
 self.addEventListener("fetch", (event)=>{
   if(event.request.method !== "GET") return;
   event.respondWith(
-    caches.match(event.request).then(cached=>{
-      if(cached) return cached;
-      return fetch(event.request).then(resp=>{
-        if(resp.ok && resp.type==="basic"){
-          const copy = resp.clone();
-          caches.open(CACHE_NAME).then(cache=> cache.put(event.request, copy));
-        }
-        return resp;
-      }).catch(()=> cached);
-    })
+    fetch(event.request).then(resp=>{
+      if(resp.ok && resp.type==="basic"){
+        const copy = resp.clone();
+        caches.open(CACHE_NAME).then(cache=> cache.put(event.request, copy));
+      }
+      return resp;
+    }).catch(()=> caches.match(event.request))
   );
 });
