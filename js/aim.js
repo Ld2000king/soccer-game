@@ -182,14 +182,8 @@ class AimShootout{
     ctx.beginPath(); ctx.moveTo(0,H*0.5); ctx.lineTo(W,H*0.5); ctx.stroke();
     ctx.setLineDash([]);
 
-    // keeper
-    ctx.beginPath();
-    ctx.arc(this.keeper.x, this.keeper.y, 14, 0, Math.PI*2);
-    ctx.fillStyle = "#ffd23f";
-    ctx.fill();
-    ctx.strokeStyle="#04231a"; ctx.lineWidth=2; ctx.stroke();
-    ctx.fillStyle="#04231a"; ctx.font="10px Arial"; ctx.textAlign="center";
-    ctx.fillText("🧤", this.keeper.x, this.keeper.y+4);
+    // keeper (small human silhouette: arms spread wide when diving)
+    this._drawKeeper();
 
     // ball
     ctx.beginPath();
@@ -197,5 +191,56 @@ class AimShootout{
     ctx.fillStyle="#fff";
     ctx.fill();
     ctx.strokeStyle="#222"; ctx.lineWidth=1; ctx.stroke();
+  }
+
+  _drawKeeper(){
+    const ctx = this.ctx;
+    const x = this.keeper.x, y = this.keeper.y;
+    const diving = this.phase!=="idle";
+    const lean = diving ? (this.keeper.x - this.W/2) / (this.W/2) : 0; // -1..1
+
+    // shadow
+    ctx.beginPath();
+    ctx.ellipse(x, y+13, 9, 3, 0, 0, Math.PI*2);
+    ctx.fillStyle = "rgba(0,0,0,.35)";
+    ctx.fill();
+
+    // legs
+    ctx.strokeStyle = "#1c1c1c"; ctx.lineWidth = 3; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(x-2.5, y+2); ctx.lineTo(x-2.5-lean*4, y+12); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x+2.5, y+2); ctx.lineTo(x+2.5-lean*4, y+12); ctx.stroke();
+
+    // shorts
+    ctx.fillStyle = "#111";
+    ctx.fillRect(x-4.5, y, 9, 4);
+
+    // torso / goalkeeper jersey (bright, distinct color)
+    ctx.beginPath();
+    ctx.ellipse(x, y-4, 7, 8, lean*0.3, 0, Math.PI*2);
+    ctx.fillStyle = "#ffd23f";
+    ctx.fill();
+    ctx.strokeStyle = "#04231a"; ctx.lineWidth = 1.5; ctx.stroke();
+
+    // arms — spread wide when diving, relaxed when idle
+    const armSpread = diving ? 13 : 6;
+    const armLift = diving ? -4 : -6;
+    ctx.strokeStyle = "#ffd23f"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(x-4, y-9); ctx.lineTo(x-armSpread, y+armLift); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x+4, y-9); ctx.lineTo(x+armSpread, y+armLift); ctx.stroke();
+    // gloves
+    ctx.fillStyle = "#fff";
+    ctx.beginPath(); ctx.arc(x-armSpread, y+armLift, 2.6, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x+armSpread, y+armLift, 2.6, 0, Math.PI*2); ctx.fill();
+
+    // head + hair
+    ctx.beginPath();
+    ctx.arc(x, y-13.5, 3.4, 0, Math.PI*2);
+    ctx.fillStyle = "#e3ac82";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,.25)"; ctx.lineWidth = 0.8; ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y-14.7, 3.4, Math.PI, Math.PI*2);
+    ctx.fillStyle = "#2b1a10";
+    ctx.fill();
   }
 }

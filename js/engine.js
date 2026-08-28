@@ -172,35 +172,8 @@ class PitchRenderer{
     ctx.fillRect(W/2-40, m+16, 80, 6);
     ctx.fillRect(W/2-40, H-m-22, 80, 6);
 
-    // players
-    this.players.forEach(pl=>{
-      // shadow
-      ctx.beginPath();
-      ctx.ellipse(pl.x, pl.y+10, 10, 4, 0, 0, Math.PI*2);
-      ctx.fillStyle = "rgba(0,0,0,.35)";
-      ctx.fill();
-      // body
-      ctx.beginPath();
-      ctx.arc(pl.x, pl.y, pl.hero?11:9, 0, Math.PI*2);
-      ctx.fillStyle = pl.color;
-      ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = pl.secondary || "#fff";
-      ctx.stroke();
-      if(pl.hero){
-        ctx.beginPath();
-        ctx.arc(pl.x, pl.y, 15, 0, Math.PI*2);
-        ctx.strokeStyle = "rgba(255,210,63,.8)";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      }
-      if(pl.number){
-        ctx.fillStyle = "#fff";
-        ctx.font = "8px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(pl.number, pl.x, pl.y+3);
-      }
-    });
+    // players — small human silhouettes with a light jogging animation
+    this.players.forEach((pl,idx)=> this._drawPlayer(pl, idx));
 
     // ball with rotation lines + arc-shadow for "height"
     const bz = this.ball.z||0;
@@ -231,6 +204,77 @@ class PitchRenderer{
     if(this.flash>0){
       ctx.fillStyle = `rgba(255,210,63,${this.flash*0.25})`;
       ctx.fillRect(0,0,W,H);
+    }
+  }
+
+  _drawPlayer(pl, idx){
+    const ctx = this.ctx;
+    const x = pl.x, y = pl.y;
+    const s = pl.hero ? 1.15 : 1; // slight scale-up for the hero
+    const cycle = this.time*6 + idx*1.7;
+    const legSwing = Math.sin(cycle) * 3.5;
+    const armSwing = Math.sin(cycle + Math.PI) * 2.6;
+
+    // shadow
+    ctx.beginPath();
+    ctx.ellipse(x, y+13*s, 8*s, 3*s, 0, 0, Math.PI*2);
+    ctx.fillStyle = "rgba(0,0,0,.35)";
+    ctx.fill();
+
+    // legs (dark shorts-to-boot, alternating stride)
+    ctx.strokeStyle = "#1c1c1c";
+    ctx.lineWidth = 2.6*s;
+    ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(x-2.2*s, y+3*s); ctx.lineTo(x-2.2*s+legSwing*0.4*s, y+12*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x+2.2*s, y+3*s); ctx.lineTo(x+2.2*s-legSwing*0.4*s, y+12*s); ctx.stroke();
+
+    // shorts
+    ctx.fillStyle = pl.secondary || "#ffffff";
+    ctx.fillRect(x-4*s, y+1.5*s, 8*s, 4*s);
+
+    // torso / jersey
+    ctx.beginPath();
+    ctx.ellipse(x, y-2.5*s, 5.6*s, 6.6*s, 0, 0, Math.PI*2);
+    ctx.fillStyle = pl.color;
+    ctx.fill();
+    ctx.lineWidth = 1.3;
+    ctx.strokeStyle = pl.secondary || "#ffffff";
+    ctx.stroke();
+
+    // arms
+    ctx.strokeStyle = pl.color;
+    ctx.lineWidth = 2.2*s;
+    ctx.beginPath(); ctx.moveTo(x-5.6*s, y-5.5*s); ctx.lineTo(x-5.6*s+armSwing*0.5*s, y+0.5*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x+5.6*s, y-5.5*s); ctx.lineTo(x+5.6*s-armSwing*0.5*s, y+0.5*s); ctx.stroke();
+
+    // jersey number
+    if(pl.number){
+      ctx.fillStyle = "#fff";
+      ctx.font = `bold ${6.5*s}px Arial`;
+      ctx.textAlign = "center";
+      ctx.fillText(pl.number, x, y-1.5*s);
+    }
+
+    // head + hair
+    ctx.beginPath();
+    ctx.arc(x, y-10.5*s, 3.2*s, 0, Math.PI*2);
+    ctx.fillStyle = "#e3ac82";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,.25)";
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y-11.6*s, 3.2*s, Math.PI, Math.PI*2);
+    ctx.fillStyle = "#2b1a10";
+    ctx.fill();
+
+    // hero highlight ring
+    if(pl.hero){
+      ctx.beginPath();
+      ctx.arc(x, y-2*s, 17*s, 0, Math.PI*2);
+      ctx.strokeStyle = "rgba(255,210,63,.85)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
     }
   }
 }
