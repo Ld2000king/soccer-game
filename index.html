@@ -99,6 +99,9 @@
           <div id="hud-name" class="hud-name">—</div>
           <div id="hud-club" class="hud-club">—</div>
         </div>
+        <button id="btn-lifestyle" class="topbar-icon-btn" title="לייף סטייל" aria-label="לייף סטייל">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>
+        </button>
       </div>
       <div class="topbar-stats">
         <div class="hud-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v4M16 2v4M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/></svg><span id="hud-age">18</span></div>
@@ -148,6 +151,22 @@
         <div id="news-feed" class="news-feed"></div>
       </div>
     </main>
+  </section>
+
+  <!-- ===== לייף סטייל ===== -->
+  <section id="screen-lifestyle" class="screen">
+    <header class="lifestyle-header">
+      <button id="btn-lifestyle-back" class="topbar-icon-btn" title="חזרה" aria-label="חזרה">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <h2>לייף סטייל</h2>
+      <div class="lifestyle-money">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 15.5c.5 1 1.5 1.5 2.5 1.5s2-.5 2.5-1.5M9 9.5c0-1 1-2 3-2s3 1 3 2-1.2 1.6-2 2.2"/></svg>
+        <span id="lifestyle-money">0</span>₪
+      </div>
+    </header>
+    <div id="lifestyle-upkeep-banner" class="lifestyle-upkeep-banner"></div>
+    <div id="lifestyle-categories" class="lifestyle-categories"></div>
   </section>
 
   <!-- ===== מסך אימון ===== -->

@@ -140,6 +140,50 @@ function renderEventScreen(){
   $("#event-b-hint").textContent = event.b.hint;
 }
 
+// ---------- LIFESTYLE SHOP ----------
+function renderLifestyleScreen(){
+  const p = Career.state.player;
+  $("#lifestyle-money").textContent = p.money.toLocaleString();
+
+  const upkeep = Career.lifestyleUpkeep();
+  $("#lifestyle-upkeep-banner").textContent = upkeep>0
+    ? `תחזוקה שבועית כוללת: ${upkeep.toLocaleString()}₪ מנוכה מהמשכורת כל שבוע`
+    : "";
+
+  const wrap = $("#lifestyle-categories");
+  wrap.innerHTML = "";
+  LIFESTYLE_CATEGORIES.forEach(cat=>{
+    const ownedId = p.lifestyle[cat.id];
+    const section = document.createElement("div");
+    section.className = "lifestyle-category";
+    section.innerHTML = `<div class="lifestyle-category-title">${cat.icon} ${cat.label}</div>`;
+    const grid = document.createElement("div");
+    grid.className = "lifestyle-items";
+    cat.items.forEach(item=>{
+      const owned = ownedId===item.id;
+      const canAfford = p.money >= item.cost;
+      const card = document.createElement("div");
+      card.className = "lifestyle-item" + (owned ? " owned" : "");
+      card.innerHTML = `
+        ${owned ? `<div class="lifestyle-item-badge">בבעלותך</div>` : ""}
+        <div class="lifestyle-item-name">${item.name}</div>
+        <div class="lifestyle-item-flavor">${item.flavor || ""}</div>
+        <div class="lifestyle-item-cost">${item.cost.toLocaleString()}₪</div>
+        ${item.upkeep>0 ? `<div class="lifestyle-item-upkeep">תחזוקה: ${item.upkeep.toLocaleString()}₪/שבוע</div>` : ""}
+        <button class="lifestyle-buy-btn" ${owned || !canAfford ? "disabled" : ""}>${owned ? "בבעלותך" : "קנה"}</button>
+      `;
+      if(!owned){
+        card.querySelector(".lifestyle-buy-btn").addEventListener("click", ()=>{
+          if(Career.buyLifestyleItem(cat.id, item.id)) renderLifestyleScreen();
+        });
+      }
+      grid.appendChild(card);
+    });
+    section.appendChild(grid);
+    wrap.appendChild(section);
+  });
+}
+
 // ---------- TRAINING ----------
 let currentTraining = null;
 let trainingBar = null;
@@ -271,6 +315,12 @@ document.addEventListener("DOMContentLoaded", ()=>{
 
   $("#btn-train").addEventListener("click", startTrainingFlow);
   $("#btn-timing-hit").addEventListener("click", resolveTraining);
+
+  $("#btn-lifestyle").addEventListener("click", ()=>{
+    renderLifestyleScreen();
+    showScreen("screen-lifestyle");
+  });
+  $("#btn-lifestyle-back").addEventListener("click", goDashboard);
 
   $("#btn-rest").addEventListener("click", ()=>{
     Career.rest();

@@ -21,6 +21,7 @@ const Career = {
         money:5000, wage:400,
         clubId, contractWeeks: 52,
         goals:0, assists:0, appearances:0, form:0,
+        lifestyle:{}, // categoryId -> itemId owned
       },
       season:1, week:1,
       clubs: JSON.parse(JSON.stringify(CLUBS)),
@@ -140,6 +141,7 @@ const Career = {
     if(this.state.week > totalRounds){
       this._endOfSeason();
     }
+    this._chargeLifestyleUpkeep();
     if(!this.state.pendingTransfer){
       this._maybeTriggerMidSeasonOffer();
     }
@@ -147,6 +149,47 @@ const Career = {
       this._maybeTriggerEvent();
     }
     this.save();
+  },
+
+  // ---- Lifestyle shop: one item owned per category, cost once + upkeep weekly ----
+  lifestyleUpkeep(){
+    const p = this.state.player;
+    let total = 0;
+    LIFESTYLE_CATEGORIES.forEach(cat=>{
+      const ownedId = p.lifestyle && p.lifestyle[cat.id];
+      if(!ownedId) return;
+      const item = cat.items.find(i=>i.id===ownedId);
+      if(item) total += item.upkeep;
+    });
+    return total;
+  },
+
+  buyLifestyleItem(categoryId, itemId){
+    const p = this.state.player;
+    const cat = LIFESTYLE_CATEGORIES.find(c=>c.id===categoryId);
+    const item = cat && cat.items.find(i=>i.id===itemId);
+    if(!item || p.money < item.cost) return false;
+    p.money -= item.cost;
+    p.lifestyle[categoryId] = itemId;
+    if(item.morale) p.morale = Math.max(0, Math.min(100, p.morale+item.morale));
+    if(item.reputation) p.reputation = Math.max(0, p.reputation+item.reputation);
+    if(item.chemistry) p.chemistry = Math.max(0, Math.min(100, p.chemistry+item.chemistry));
+    this.addNews(`${p.name} רכש/ה ${item.name}! ${item.flavor || ""}`.trim());
+    this.save();
+    return true;
+  },
+
+  _chargeLifestyleUpkeep(){
+    const p = this.state.player;
+    const upkeep = this.lifestyleUpkeep();
+    if(upkeep<=0) return;
+    if(p.money>=upkeep){
+      p.money -= upkeep;
+    } else {
+      p.money = 0;
+      p.morale = Math.max(0, p.morale-5);
+      this.addNews(`התחזוקה של אורח החיים שלך יקרה מדי — לא הצלחת לשלם החודש!`);
+    }
   },
 
   _absWeek(){
@@ -182,12 +225,16 @@ const Career = {
     const choice = event[choiceKey];
     const p = this.state.player;
     const eff = choice.effects || {};
+    const statKeys = ["pace","shooting","passing","dribbling","defending","physical"];
     if(eff.energy!=null) p.energy = Math.max(0, Math.min(100, p.energy+eff.energy));
     if(eff.morale!=null) p.morale = Math.max(0, Math.min(100, p.morale+eff.morale));
     if(eff.chemistry!=null) p.chemistry = Math.max(0, Math.min(100, p.chemistry+eff.chemistry));
     if(eff.coachTrust!=null) p.coachTrust = Math.max(0, Math.min(100, p.coachTrust+eff.coachTrust));
     if(eff.reputation!=null) p.reputation = Math.max(0, p.reputation+eff.reputation);
     if(eff.money!=null) p.money = Math.max(0, p.money+eff.money);
+    statKeys.forEach(k=>{
+      if(eff[k]!=null) p[k] = Math.max(20, Math.min(p.potential, p[k]+eff[k]));
+    });
     if(choice.extraTraining){
       const statKeys = ["pace","shooting","passing","dribbling","defending","physical"];
       const stat = randPick(statKeys);
@@ -312,6 +359,7 @@ const Career = {
     const p = this.state.player;
     if(p.chemistry==null) p.chemistry = 50;
     if(p.coachTrust==null) p.coachTrust = 50;
+    if(p.lifestyle==null) p.lifestyle = {};
     if(this.state.pendingEvent===undefined) this.state.pendingEvent = null;
   },
   hasSave(){
