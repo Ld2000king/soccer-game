@@ -501,19 +501,42 @@ function renderTransferScreen(){
   pt.offers.forEach(o=>{
     const c = Career.getClub(o.clubId);
     const el = document.createElement("div");
-    el.className = "club-card";
+    el.className = "club-card flip-card";
     el.innerHTML = `
-      <div class="club-crest" style="background:${c.primary}; color:${c.secondary}; border-color:${c.secondary}">${crestInitials(c)}</div>
-      <div class="club-name">${c.name}</div>
-      <div class="club-rating">דירוג ${c.rating} • שכר ${o.wage}₪/שבוע</div>
+      <div class="flip-card-inner">
+        <div class="flip-card-back"><span class="flip-card-mark">?</span></div>
+        <div class="flip-card-front">
+          <div class="club-crest" style="background:${c.primary}; color:${c.secondary}; border-color:${c.secondary}">${crestInitials(c)}</div>
+          <div class="club-name">${c.name}</div>
+          <div class="club-rating">דירוג ${c.rating} • שכר ${o.wage}₪/שבוע</div>
+        </div>
+      </div>
     `;
     el.addEventListener("click", ()=>{
+      if(!el.classList.contains("flipped")) return;
       negotiateClubId = o.clubId;
       renderNegotiateScreen();
       showScreen("screen-negotiate");
     });
     grid.appendChild(el);
   });
+  // draft-style reveal: cards start face-down, the player triggers the flip
+  grid.classList.add("pending-reveal");
+  $("#transfer-reveal").classList.remove("hidden");
+  $("#btn-skip-transfer").classList.add("hidden");
+}
+
+function revealTransferOffers(){
+  const grid = $("#transfer-offers");
+  $("#transfer-reveal").classList.add("hidden");
+  const cards = $$("#transfer-offers .flip-card");
+  cards.forEach((el,i)=>{
+    setTimeout(()=> el.classList.add("flipped"), 260*i);
+  });
+  setTimeout(()=>{
+    grid.classList.remove("pending-reveal");
+    $("#btn-skip-transfer").classList.remove("hidden");
+  }, 260*cards.length + 550);
 }
 
 // ---------- CONTRACT NEGOTIATION ----------
@@ -642,6 +665,8 @@ document.addEventListener("DOMContentLoaded", ()=>{
     Career.skipTransfer();
     goDashboard();
   });
+
+  $("#btn-reveal-offers").addEventListener("click", revealTransferOffers);
 
   $("#btn-event-a").addEventListener("click", ()=>{
     Career.resolveEvent("a");

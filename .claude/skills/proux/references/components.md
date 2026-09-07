@@ -366,3 +366,46 @@ headline from reading as a wall.
   color:var(--px-text-dim); text-align:center;
 }
 ```
+
+## Draft-style card reveal
+
+The "candidates found — open the cards" moment: a grid of face-down cards
+that flip open one at a time after the user taps a single reveal button.
+Use this for any "here's what you got" moment — a pack of offers, a squad
+draft, loot — not just a literal card game. The trigger button text should
+promise motion ("מגרילים...", "פותחים...") since the payoff is the flip.
+
+```css
+.px-flip-grid .px-flip-card{
+  perspective:1000px; cursor:default; /* not clickable until flipped */
+}
+.px-flip-inner{
+  position:relative; width:100%; height:100%; min-height:150px;
+  transition:transform .6s cubic-bezier(.2,.8,.3,1); transform-style:preserve-3d;
+}
+.px-flip-card.flipped .px-flip-inner{transform:rotateY(180deg);}
+.px-flip-card.flipped{cursor:pointer;}
+.px-flip-face{
+  position:absolute; inset:0; backface-visibility:hidden; border-radius:var(--px-r);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; padding:14px;
+}
+.px-flip-back{background:linear-gradient(160deg,var(--px-bg-2),#030a14); border:1px solid var(--px-rim); box-shadow:var(--px-glow-blue);}
+.px-flip-back .mark{font:900 30px/1 'Rubik',sans-serif; color:var(--px-rim-hot); animation:cardPulse 2s ease-in-out infinite;}
+@keyframes cardPulse{0%,100%{transform:scale(1); opacity:.85;} 50%{transform:scale(1.12); opacity:1;}}
+.px-flip-front{background:var(--px-panel); border:2px solid transparent; transform:rotateY(180deg);}
+.px-flip-card.flipped:hover .px-flip-front{border-color:var(--px-lime); box-shadow:var(--px-glow-lime);}
+```
+
+Reveal each card with a staggered delay (`~260ms` apart) rather than all at
+once — that stagger, not the flip itself, is what makes it read as a
+"reveal" instead of a state toggle:
+
+```js
+cards.forEach((el,i)=> setTimeout(()=> el.classList.add("flipped"), 260*i));
+```
+
+Keep every card's own reveal-button and grid disabled/hidden until the
+sequence starts, then only make each card clickable once *it* has flipped
+(gate the click handler on `.flipped`, not on the grid overall) — otherwise
+an impatient tap during the animation can select an offer whose face hasn't
+rendered yet.

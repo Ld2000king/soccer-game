@@ -129,6 +129,11 @@ it when you're writing the actual styles. The shapes to know:
   faint blue-rimmed box. Reads as a stadium scoreboard.
 - **Chip** — pill, dark fill, blue rim, tiny round icon at the leading edge.
   Used for footer links and metadata.
+- **Draft-style card reveal** — a grid of face-down cards (blue rim, pulsing
+  "?" mark) that flip open on a single tap of a reveal button, one card at a
+  time with a short stagger. Use it for any "here's what you got" moment
+  (offers, a draft, loot), not just literal cards; a card only becomes
+  clickable once it has personally flipped.
 
 ## Motion
 
@@ -174,6 +179,15 @@ Latin characters split into flex/grid items needs this, not just digits. And
 in a row, the **state badge belongs at the reading-start edge** with the
 thumbnail at the reading-end edge, which means DOM order
 badge → text → thumbnail rather than the LTR habit of image first.
+
+The direction fix cuts both ways, though: reach for `direction:ltr` only when
+a number or Latin run is actually **split into sibling flex/grid items**
+(one span per digit or per letter) — that's what gets reordered. A single
+text node holding a whole number (`<span>5,000</span>` inside an icon+value
+pill) is already rendered correctly by the Unicode bidi algorithm with no
+CSS needed; slapping `direction:ltr` on the pill *itself* instead reorders
+its own children (icon and value swap sides), which is a regression, not a
+fix. Check whether the number is one node or many before reaching for this.
 
 ## Iconography and art
 
