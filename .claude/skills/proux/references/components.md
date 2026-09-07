@@ -72,36 +72,40 @@ No photograph available? Build the depth synthetically — still not a flat fill
 
 ## Ambient motion
 
-Rising bokeh — the single most recognisable movement in the system. Vary size,
-duration and delay per element or it reads as a machine.
+Background Ken-Burns — the single most recognisable movement in the system:
+the depth photo/gradient layer behind the UI slowly zooms and drifts, while
+everything in front of it holds still. (An earlier version of this file
+described floating bokeh particles here instead — that was a guess that
+never matched the source; frame-by-frame diffing of the real home screen
+showed a slow background zoom and nothing floating. If a project already has
+`.px-bokeh` from that guess, replace it with this rather than running both.)
+
+Put it on its own oversized layer — a `::before` on the screen works well —
+sized past the edges so the scale never reveals a seam:
 
 ```css
-.px-bokeh{position:fixed; inset:0; z-index:-1; overflow:hidden; pointer-events:none;}
-.px-bokeh i{
-  position:absolute; bottom:-80px;
-  width:var(--s,26px); height:var(--s,26px);
-  border-radius:50%;
-  background:radial-gradient(circle at 35% 35%, rgba(124,200,248,.55), rgba(74,168,240,.14) 70%, transparent);
-  animation:px-rise var(--d,14s) linear infinite;
-  animation-delay:var(--delay,0s);
+.px-kenburns-layer{
+  position:absolute; inset:-10%; z-index:0; pointer-events:none;
+  /* whatever depth background the screen uses: photo, or the layered
+     radial-gradient stand-in from Rule 1 */
+  animation:px-kenburns 16s ease-in-out infinite alternate;
 }
-@keyframes px-rise{
-  0%{transform:translateY(0) scale(.9); opacity:0;}
-  12%{opacity:.7;}
-  88%{opacity:.5;}
-  100%{transform:translateY(-115dvh) scale(1.1); opacity:0;}
+@keyframes px-kenburns{
+  0%  {transform:scale(1)     translate(0,0);}
+  100%{transform:scale(1.12) translate(-1.5%,-1%);}
 }
 ```
 
-```html
-<div class="px-bokeh" aria-hidden="true">
-  <i style="left:8%;  --s:22px; --d:16s; --delay:0s"></i>
-  <i style="left:22%; --s:38px; --d:21s; --delay:3s"></i>
-  <i style="left:41%; --s:16px; --d:13s; --delay:6s"></i>
-  <i style="left:63%; --s:30px; --d:18s; --delay:1.5s"></i>
-  <i style="left:79%; --s:20px; --d:24s; --delay:8s"></i>
-  <i style="left:92%; --s:34px; --d:19s; --delay:4.5s"></i>
-</div>
+Applied directly to a screen as a pseudo-element (no extra markup needed):
+
+```css
+#some-screen{position:relative; overflow:hidden;}
+#some-screen::before{
+  content:""; position:absolute; inset:-10%; z-index:0; pointer-events:none;
+  background: /* the screen's depth gradients/photo */;
+  animation:px-kenburns 16s ease-in-out infinite alternate;
+}
+/* content needs its own z-index/stacking context to stay above this */
 ```
 
 Glow breathing, for whatever should be touched next:
@@ -114,7 +118,7 @@ Glow breathing, for whatever should be touched next:
 .px-breathe{animation:px-breathe 2.6s ease-in-out infinite;}
 
 @media (prefers-reduced-motion:reduce){
-  .px-bokeh, .px-breathe{animation:none;}
+  .px-kenburns-layer, #some-screen::before, .px-breathe{animation:none;}
 }
 ```
 

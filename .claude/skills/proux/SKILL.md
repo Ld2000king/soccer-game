@@ -52,9 +52,12 @@ calm blue-grey so the headline keeps all the contrast. In Hebrew use Rubik or
 Heebo at 700–900; in Latin any grotesque with a real black weight works.
 
 **6. The screen is alive.** Something is always moving, slowly, in the
-background: bokeh particles drifting upward, confetti after a win, a glow that
-breathes, a light sweep crossing a border. It is ambient and never competes with
-content — but a completely static screen in this system looks broken.
+background: the depth photo behind the UI drifts in a slow Ken-Burns push
+(scaling up a few percent over 15-20s), confetti falls after a win, a glow
+breathes, a light sweep crosses a border. It is ambient and never competes
+with content — but a completely static screen in this system looks broken.
+Floating particles are NOT part of the real system — see the corrected note
+under Motion below before reaching for them.
 
 ## Tokens
 
@@ -137,14 +140,31 @@ it when you're writing the actual styles. The shapes to know:
 
 ## Motion
 
-Timing: 180–240ms for state changes with `cubic-bezier(.2,.8,.3,1)`; 2–6s for
-ambient loops; 400–700ms for celebratory pops with a slight overshoot
-(`cubic-bezier(.2,1.7,.4,1)`).
+Timing: 180–240ms for state changes with `cubic-bezier(.2,.8,.3,1)`; 15–20s for
+the background push; 2–3s for other ambient loops; 400–700ms for celebratory
+pops with a slight overshoot (`cubic-bezier(.2,1.7,.4,1)`).
+
+**Correction, found by re-checking the source video frame-by-frame rather than
+going on impression:** an earlier version of this skill described the
+signature ambient motion as "10-20 translucent cyan circles drifting upward"
+— floating bokeh. That was never actually in the reference; it was invented
+because a dark UI with glowing accents *reads* like the kind of system that
+would have particles, and nobody had gone back to check. Diffing consecutive
+frames of the real home screen shows no particles at all — what actually
+moves is the depth photo itself, slowly zooming in behind the static UI
+(classic Ken Burns). The lesson isn't "use Ken Burns instead of bokeh", it's
+**don't backfill a plausible-sounding animation for a rule like "the screen
+is alive" — check what the reference actually does, even for something as
+easy to hand-wave as ambient motion.**
 
 The signature moves, in rough order of how much they define the system:
 
-1. **Rising bokeh** — 10–20 translucent cyan circles of varied size drifting
-   slowly upward across the backdrop, each with its own duration and delay.
+1. **Background Ken-Burns** — the depth photo/gradient layer behind the UI
+   slowly scales up (~10-12%) and drifts a percent or two over 15-20s,
+   easing in and out, alternating direction so it never resets with a jump.
+   Put it on an oversized (`inset:-10%`) layer of its own — a `::before` on
+   the screen works well — so the zoom never reveals an edge; content in
+   front stays perfectly still.
 2. **Glow breathing** — a border's glow radius easing up and down on a 2–3s
    loop, used on whatever the user should touch next.
 3. **Light sweep** — a bright short gradient travelling once across a border or
@@ -154,7 +174,7 @@ The signature moves, in rough order of how much they define the system:
    boxes flip.
 
 Respect `prefers-reduced-motion`: keep the state transitions, drop the ambient
-loops.
+loops (Ken-Burns included).
 
 ## Layout
 
