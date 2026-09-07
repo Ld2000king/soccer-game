@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>proux demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --px-bg:#03060b; --px-bg-2:#07111d; --px-panel:#0a1424; --px-panel-sel:#0a1e3f;
+  --px-line:#16283f; --px-rim:#4aa8f0; --px-rim-hot:#7cc8f8; --px-blue:#0b4f90;
+  --px-info:#5090c8; --px-lime:#c2ff40;
+  --px-red-hi:#7d0a2b; --px-red-lo:#2a000d; --px-red-rim:#a8203f;
+  --px-text:#fff; --px-text-dim:#9fb6cc;
+  --px-r-sm:10px; --px-r:14px; --px-r-lg:20px; --px-r-pill:999px;
+  --px-glow-blue:0 0 18px rgba(74,168,240,.45);
+  --px-glow-red:0 0 22px rgba(168,32,63,.50);
+  --px-glow-lime:0 0 14px rgba(194,255,64,.50);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--px-bg);color:var(--px-text);font-family:'Rubik',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.px-shell{position:relative;min-height:100dvh;isolation:isolate;padding:20px;max-width:430px;margin:0 auto}
+.px-shell::before{content:"";position:fixed;inset:0;z-index:-2;
+  background:
+    radial-gradient(90% 55% at 50% -5%, rgba(74,168,240,.22), transparent 62%),
+    radial-gradient(70% 45% at 12% 108%, rgba(11,79,144,.30), transparent 60%),
+    radial-gradient(60% 40% at 88% 12%, rgba(124,200,248,.10), transparent 55%),
+    linear-gradient(180deg,#05080f,#020409);}
+.px-shell::after{content:"";position:fixed;inset:0;z-index:-1;
+  background:linear-gradient(180deg, rgba(3,6,11,.35) 0%, rgba(3,6,11,.55) 60%, var(--px-bg) 100%);}
+.px-bokeh{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.px-bokeh i{position:absolute;bottom:-80px;width:var(--s,26px);height:var(--s,26px);border-radius:50%;
+  background:radial-gradient(circle at 35% 35%, rgba(124,200,248,.55), rgba(74,168,240,.14) 70%, transparent);
+  animation:px-rise var(--d,14s) linear infinite;animation-delay:var(--delay,0s)}
+@keyframes px-rise{0%{transform:translateY(0) scale(.9);opacity:0}12%{opacity:.7}88%{opacity:.5}100%{transform:translateY(-115dvh) scale(1.1);opacity:0}}
+
+.px-wordmark{font:900 clamp(34px,9vw,52px)/1 'Rubik',sans-serif;letter-spacing:.5px;text-align:center;margin:6px 0 18px;
+  background:linear-gradient(180deg,#fff 0%,#cfe4f7 42%,#7fa9cd 58%,#fff 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 2px 0 #0a1424) drop-shadow(0 0 22px rgba(74,168,240,.65))}
+
+.px-digits{display:flex;gap:6px;justify-content:center;margin-bottom:8px;direction:ltr}
+.px-digit{width:44px;height:58px;border-radius:8px;display:grid;place-items:center;background:rgba(5,14,26,.9);
+  border:1px solid var(--px-line);font:900 30px/1 'Rubik',sans-serif;color:#33455c}
+.px-digit--on{color:var(--px-lime);border-color:rgba(74,168,240,.6);
+  box-shadow:0 0 12px rgba(74,168,240,.3), inset 0 0 10px rgba(194,255,64,.08)}
+.px-caption{text-align:center;color:var(--px-lime);font:700 12px/1 'Rubik';margin-bottom:26px;letter-spacing:2px}
+
+.px-display{font:900 clamp(28px,8vw,38px)/1.12 'Rubik',sans-serif;text-align:center;margin:0 0 20px;text-shadow:0 4px 22px rgba(0,0,0,.6)}
+.px-display em{font-style:normal;color:#8fc6f2}
+
+.px-stats{display:flex;border:1px solid rgba(74,168,240,.35);border-radius:var(--px-r);background:rgba(7,17,29,.7);overflow:hidden;margin-bottom:18px}
+.px-stat{flex:1;padding:14px 8px;text-align:center;border-inline-end:1px solid var(--px-line)}
+.px-stat:last-child{border-inline-end:0}
+.px-stat__num{font:800 26px/1 'Rubik';color:var(--px-info)}
+.px-stat__label{font:500 12px/1 'Rubik';color:var(--px-text-dim);margin-top:6px}
+
+.px-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:16px 20px;border-radius:var(--px-r);
+  font:800 17px/1 'Rubik',sans-serif;color:var(--px-text);cursor:pointer;border:1px solid transparent;margin-bottom:12px;
+  transition:transform .18s cubic-bezier(.2,.8,.3,1),box-shadow .18s cubic-bezier(.2,.8,.3,1),filter .18s}
+.px-btn:active{transform:scale(.985)}
+.px-btn--primary{background:linear-gradient(180deg,var(--px-red-hi) 0%,#4d0017 45%,var(--px-red-lo) 100%);
+  border-color:var(--px-red-rim);box-shadow:var(--px-glow-red), inset 0 1px 0 rgba(255,120,150,.35)}
+.px-btn--ghost{background:linear-gradient(180deg,rgba(11,79,144,.30),rgba(5,17,33,.55));border-color:var(--px-rim);
+  box-shadow:var(--px-glow-blue), inset 0 0 20px rgba(11,79,144,.25);position:relative;overflow:hidden}
+.px-btn--ghost::before{content:"";position:absolute;inset-inline:12%;top:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--px-rim-hot),transparent);opacity:.9}
+
+.px-tabs{display:flex;background:var(--px-bg-2);border:1px solid rgba(74,168,240,.4);border-radius:var(--px-r);overflow:hidden;margin:24px 0 16px}
+.px-tab{flex:1;padding:12px 6px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;cursor:pointer;
+  color:var(--px-text-dim);font:700 13px/1 'Rubik';border-inline-end:1px solid var(--px-line)}
+.px-tab:last-child{border-inline-end:0}
+.px-tab span.ico{font-size:22px;opacity:.65}
+.px-tab[aria-selected="true"]{background:#1d2a21;color:var(--px-text)}
+.px-tab[aria-selected="true"] span.ico{opacity:1}
+.px-tab__mark{width:34px;height:4px;border-radius:3px;background:#33455c}
+.px-tab[aria-selected="true"] .px-tab__mark{background:var(--px-lime);box-shadow:var(--px-glow-lime)}
+
+.px-row{display:flex;align-items:center;gap:14px;padding:12px 14px;margin-bottom:12px;background:var(--px-bg-2);
+  border:1px solid var(--px-line);border-radius:var(--px-r);cursor:pointer;transition:border-color .2s,background .2s,box-shadow .2s}
+.px-row[aria-selected="true"]{background:var(--px-panel-sel);border-color:var(--px-rim);box-shadow:var(--px-glow-blue)}
+.px-row__thumb{order:3;width:74px;height:92px;border-radius:10px;flex-shrink:0;
+  background:linear-gradient(160deg,#0e2340,#071426);border:1px solid var(--px-line);
+  display:grid;place-items:center;font:800 13px/1 'Rubik';color:var(--px-info)}
+.px-row__body{order:2;flex:1;min-width:0;text-align:start}
+.px-row__title{font:800 19px/1.2 'Rubik'}
+.px-row__sub{font:500 13px/1.4 'Rubik';color:var(--px-text-dim);margin-top:3px}
+.px-row__check{order:1;width:36px;height:36px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;
+  background:var(--px-lime);color:#0d1400;font-size:19px;font-weight:900;box-shadow:var(--px-glow-lime);
+  opacity:0;transform:scale(.6);transition:opacity .2s,transform .2s cubic-bezier(.2,1.7,.4,1)}
+.px-row[aria-selected="true"] .px-row__check{opacity:1;transform:scale(1)}
+
+.px-chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+.px-chip{display:inline-flex;align-items:center;gap:8px;padding:7px 14px 7px 8px;border-radius:var(--px-r-pill);
+  background:linear-gradient(180deg,rgba(11,79,144,.35),rgba(5,17,33,.6));border:1px solid rgba(74,168,240,.55);
+  box-shadow:0 0 12px rgba(74,168,240,.3);font:700 13px/1 'Rubik';color:var(--px-text);text-decoration:none}
+.px-chip__icon{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:rgba(74,168,240,.2)}
+</style>
+</head>
+<body>
+<div class="px-bokeh" aria-hidden="true">
+  <i style="left:8%;--s:22px;--d:16s;--delay:0s"></i>
+  <i style="left:22%;--s:38px;--d:21s;--delay:3s"></i>
+  <i style="left:41%;--s:16px;--d:13s;--delay:6s"></i>
+  <i style="left:63%;--s:30px;--d:18s;--delay:1.5s"></i>
+  <i style="left:79%;--s:20px;--d:24s;--delay:8s"></i>
+  <i style="left:92%;--s:34px;--d:19s;--delay:4.5s"></i>
+</div>
+
+<div class="px-shell">
+  <div class="px-wordmark">STAR STRIKER</div>
+
+  <div class="px-digits">
+    <div class="px-digit">0</div><div class="px-digit">0</div><div class="px-digit">0</div>
+    <div class="px-digit px-digit--on">6</div><div class="px-digit px-digit--on">5</div><div class="px-digit px-digit--on">4</div>
+  </div>
+  <div class="px-caption">עונות</div>
+
+  <h1 class="px-display">בונים את הקבוצה<br>של כל הזמנים<br><em>ומובילים לתארים</em></h1>
+
+  <div class="px-stats">
+    <div class="px-stat"><div class="px-stat__num">7,522</div><div class="px-stat__label">השיא שלך</div></div>
+    <div class="px-stat"><div class="px-stat__num">2</div><div class="px-stat__label">עונות</div></div>
+    <div class="px-stat"><div class="px-stat__num">0</div><div class="px-stat__label">אליפויות</div></div>
+  </div>
+
+  <button class="px-btn px-btn--primary">ממשיכים את העונה <span aria-hidden="true">‹</span></button>
+  <button class="px-btn px-btn--ghost"><span aria-hidden="true">»</span> מתחילים עונה חדשה <span aria-hidden="true">«</span></button>
+
+  <div class="px-tabs">
+    <button class="px-tab" aria-selected="true"><span class="ico">🧤</span>שוער<span class="px-tab__mark"></span></button>
+    <button class="px-tab"><span class="ico">🛡️</span>הגנה<span class="px-tab__mark"></span></button>
+    <button class="px-tab"><span class="ico">🎯</span>קישור<span class="px-tab__mark"></span></button>
+    <button class="px-tab"><span class="ico">⚡</span>התקפה<span class="px-tab__mark"></span></button>
+  </div>
+
+  <div class="px-row" aria-selected="true">
+    <div class="px-row__thumb">4-3-3</div>
+    <div class="px-row__body"><div class="px-row__title">4-3-3</div><div class="px-row__sub">מאוזן והתקפי</div></div>
+    <div class="px-row__check">✓</div>
+  </div>
+  <div class="px-row">
+    <div class="px-row__thumb">4-4-2</div>
+    <div class="px-row__body"><div class="px-row__title">4-4-2</div><div class="px-row__sub">קלאסי ויציב</div></div>
+    <div class="px-row__check">✓</div>
+  </div>
+  <div class="px-row">
+    <div class="px-row__thumb">3-5-2</div>
+    <div class="px-row__body"><div class="px-row__title">3-5-2</div><div class="px-row__sub">לחץ וקישור</div></div>
+    <div class="px-row__check">✓</div>
+  </div>
+
+  <div class="px-chips">
+    <a class="px-chip" href="#"><span class="px-chip__icon">💬</span>דברו איתנו</a>
+    <a class="px-chip" href="#"><span class="px-chip__icon">📷</span>עקבו אחרינו</a>
+  </div>
+</div>
+</body>
+</html>
