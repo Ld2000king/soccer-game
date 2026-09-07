@@ -548,9 +548,19 @@ function backToOffersOrDashboard(){
   }
 }
 
+// ---------- MENU ----------
+function renderMenuStats(){
+  const saved = Career.peekSave();
+  const p = saved && saved.player;
+  $("#menu-stat-season").textContent = saved ? saved.season : "—";
+  $("#menu-stat-week").textContent = saved ? saved.week : "—";
+  $("#menu-stat-rep").textContent = p ? p.reputation : "—";
+}
+
 // ---------- WIRE STATIC BUTTONS ----------
 document.addEventListener("DOMContentLoaded", ()=>{
   initCreateScreen();
+  renderMenuStats();
 
   if(Career.hasSave()){
     $("#btn-continue").style.display = "block";

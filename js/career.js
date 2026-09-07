@@ -567,4 +567,12 @@ const Career = {
   hasSave(){
     return !!localStorage.getItem(SAVE_KEY);
   },
+  // read the save without touching this.state — for previews (e.g. the menu
+  // screen) that shouldn't disturb an in-progress "new game" flow
+  peekSave(){
+    try{
+      const raw = localStorage.getItem(SAVE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  },
 };

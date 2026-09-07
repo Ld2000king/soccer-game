@@ -163,10 +163,16 @@ row → footer chips. Sections are separated by space, not by rules.
 both directions, put `dir="rtl"` on the root for Hebrew content, and mirror
 chevrons to point the way reading travels.
 
-Two things bite every time in RTL, so handle them up front: **numbers must not
-mirror** — put `direction:ltr` on any digit sequence, score or counter, or 654
-renders as 456; and in a row, the **state badge belongs at the reading-start
-edge** with the thumbnail at the reading-end edge, which means DOM order
+Three things bite every time in RTL, so handle them up front — the first two
+did on the very first real screen built with this skill, both invisible until
+rendered: **numbers must not mirror** — put `direction:ltr` on any digit
+sequence, score or counter, or 654 renders as 456; **a Latin wordmark laid out
+per-letter in spans must not mirror either** — the same `direction:ltr` on the
+flex row, or "STAR" spelled as individual `<span>S</span><span>T</span>...`
+renders "RATS" because the flex row reverses under `dir="rtl"`; any run of
+Latin characters split into flex/grid items needs this, not just digits. And
+in a row, the **state badge belongs at the reading-start edge** with the
+thumbnail at the reading-end edge, which means DOM order
 badge → text → thumbnail rather than the LTR habit of image first.
 
 ## Iconography and art
@@ -185,6 +191,19 @@ theme and build the same components; in an artifact or single HTML file, drop
 the `:root` block in and go. What must not change across mediums: the six rules.
 A "proux" React dashboard is still one red button, still lime-for-state, still
 rim-lit panels on a photographic dark ground.
+
+## Retrofitting onto an existing design system
+
+Restyling one screen inside an app that already has its own `.btn-primary` (or
+equivalent) is the common case, and it hides a specific trap: that existing
+class almost certainly sets a `color` chosen for ITS OWN background — often a
+dark near-black text meant to sit on a light accent fill. Layer the crimson
+gradient on top via a scoped override and that old dark text is still there,
+now nearly invisible on dark red. Whenever you reuse a shared button/card
+class rather than writing `.px-btn` from scratch, explicitly set `color` (and
+re-check any other property the shared class already owns — border, shadow)
+in the same override, and view-source or grep the base rule first rather than
+assuming it was neutral.
 
 ## Before you call it done
 
