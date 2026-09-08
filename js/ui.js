@@ -19,7 +19,7 @@ function renderClubPicker(leagueId){
     el.className = "club-card";
     el.dataset.id = c.id;
     el.innerHTML = `
-      <div class="club-crest" style="background:${c.primary}; color:${c.secondary}; border-color:${c.secondary}">${c.name.split(" ").map(w=>w[0]).join("").slice(0,3)}</div>
+      <div class="club-crest">${clubCrestSVG(c, 48)}</div>
       <div class="club-name">${c.name}</div>
       <div class="club-rating">דירוג ${c.rating}</div>
     `;
@@ -75,6 +75,8 @@ function renderDashboard(){
   const club = Career.myClub();
 
   $("#hud-avatar").textContent = p.name.slice(0,1).toUpperCase();
+  $("#hud-crest").innerHTML = clubCrestSVG(club, 34);
+  $("#week-crest-watermark").innerHTML = clubCrestSVG(club, 150);
   $("#hud-name").textContent = p.name;
   $("#hud-club").textContent = `${club.name} • ${POSITIONS[p.position].label}`;
   $("#hud-age").textContent = p.age;
@@ -101,8 +103,12 @@ function renderDashboard(){
   const fixture = Career.myFixtureThisWeek();
   if(fixture){
     const home = Career.getClub(fixture.home), away = Career.getClub(fixture.away);
-    const vs = fixture.home===p.clubId ? `${home.name} (בית) 🆚 ${away.name}` : `${home.name} 🆚 ${away.name} (חוץ)`;
-    $("#next-fixture").textContent = `המשחק הבא: ${vs}`;
+    const venue = fixture.home===p.clubId ? "בית" : "חוץ";
+    $("#next-fixture").innerHTML =
+      `<span class="fixture-side"><span class="fixture-crest">${clubCrestSVG(home, 26)}</span>${home.name}</span>` +
+      `<span class="fixture-vs">VS</span>` +
+      `<span class="fixture-side">${away.name}<span class="fixture-crest">${clubCrestSVG(away, 26)}</span></span>` +
+      `<span class="fixture-venue">(${venue})</span>`;
   } else {
     $("#next-fixture").textContent = "אין משחק השבוע";
   }
@@ -129,7 +135,7 @@ function renderDashboard(){
   let html = "<table><tr><th>מועדון</th><th>מ</th><th>נ</th><th>ת</th><th>הפ</th><th>הפ׳</th><th>נק</th></tr>";
   rows.forEach(r=>{
     const mine = r.club.id===p.clubId ? " class='me'" : "";
-    html += `<tr${mine}><td>${r.club.name}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.gf}-${r.ga}</td><td>${r.gf-r.ga}</td><td>${r.pts}</td></tr>`;
+    html += `<tr${mine}><td class="table-club"><span class="table-crest">${clubCrestSVG(r.club, 18)}</span>${r.club.name}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.gf}-${r.ga}</td><td>${r.gf-r.ga}</td><td>${r.pts}</td></tr>`;
   });
   html += "</table>";
   $("#league-table").innerHTML = html;
@@ -509,7 +515,6 @@ function resolveTraining(){
 }
 
 // ---------- TRANSFER ----------
-function crestInitials(c){ return c.name.split(" ").map(w=>w[0]).join("").slice(0,3); }
 
 function renderTransferScreen(){
   const pt = Career.state.pendingTransfer;
@@ -531,7 +536,7 @@ function renderTransferScreen(){
         <div class="flip-card-back"><span class="flip-card-mark">?</span></div>
         <div class="flip-card-front">
           ${abroad ? `<div class="offer-abroad">${league.flag} ${league.name}</div>` : ""}
-          <div class="club-crest" style="background:${c.primary}; color:${c.secondary}; border-color:${c.secondary}">${crestInitials(c)}</div>
+          <div class="club-crest">${clubCrestSVG(c, 46)}</div>
           <div class="club-name">${c.name}</div>
           <div class="club-rating">דירוג ${c.rating} • שכר ${o.wage}₪/שבוע</div>
         </div>
@@ -576,12 +581,10 @@ function renderNegotiateScreen(){
   const offer = currentOffer();
   if(!offer){ goDashboard(); return; }
   const c = Career.getClub(negotiateClubId);
-  $("#negotiate-crest").textContent = crestInitials(c);
-  $("#negotiate-crest").style.background = c.primary;
-  $("#negotiate-crest").style.color = c.secondary;
-  $("#negotiate-crest").style.borderColor = c.secondary;
+  $("#negotiate-crest").innerHTML = clubCrestSVG(c, 84);
   $("#negotiate-club-name").textContent = c.name;
-  $("#negotiate-club-rating").textContent = `דירוג מועדון ${c.rating}`;
+  const nl = getLeague(c.league);
+  $("#negotiate-club-rating").textContent = `דירוג מועדון ${c.rating} • ${nl.flag} ${nl.name}`;
   $("#negotiate-wage").textContent = `${offer.wage.toLocaleString()}₪ / שבוע`;
   $("#negotiate-status").textContent = "";
   $("#btn-negotiate-wage").disabled = offer.attempts>=3;
@@ -603,6 +606,19 @@ function renderMenuStats(){
   $("#menu-stat-season").textContent = saved ? saved.season : "—";
   $("#menu-stat-week").textContent = saved ? saved.week : "—";
   $("#menu-stat-rep").textContent = p ? p.reputation : "—";
+
+  // an in-progress career greets you with its own badge instead of the generic ball
+  const club = p && CLUBS.find(c=>c.id===p.clubId);
+  const badge = $("#menu-club-badge");
+  if(club){
+    badge.innerHTML = clubCrestSVG(club, 74);
+    badge.hidden = false;
+    $("#menu-club-name").textContent = club.name;
+    $("#menu-club-name").hidden = false;
+  } else {
+    badge.hidden = true;
+    $("#menu-club-name").hidden = true;
+  }
 }
 
 // ---------- WIRE STATIC BUTTONS ----------

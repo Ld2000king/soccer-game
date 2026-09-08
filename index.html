@@ -60,6 +60,9 @@
       </h1>
       <p class="game-subtitle">מהחצר האחורית לכוכבות עולמית</p>
 
+      <div id="menu-club-badge" class="menu-club-badge" hidden></div>
+      <div id="menu-club-name" class="menu-club-name" hidden></div>
+
       <div class="px-stats menu-stats" id="menu-stats">
         <div class="px-stat"><div class="px-stat__num" id="menu-stat-season">—</div><div class="px-stat__label">עונה</div></div>
         <div class="px-stat"><div class="px-stat__num" id="menu-stat-week">—</div><div class="px-stat__label">שבוע</div></div>
@@ -108,6 +111,7 @@
   <section id="screen-dashboard" class="screen">
     <header class="topbar">
       <div class="topbar-player">
+        <div id="hud-crest" class="hud-crest" title="המועדון שלך"></div>
         <div id="hud-avatar" class="avatar"></div>
         <div>
           <div id="hud-name" class="hud-name">—</div>
@@ -132,6 +136,8 @@
 
     <main class="dash-grid">
       <div class="card card-week">
+        <!-- your club's badge, large and faint, behind the week you are playing -->
+        <div id="week-crest-watermark" class="crest-watermark" aria-hidden="true"></div>
         <h3>שבוע <span id="hud-week">1</span> — עונה <span id="hud-season">1</span></h3>
         <p id="next-fixture" class="next-fixture">טוען משחק הבא...</p>
         <div class="workrate-row">
@@ -347,9 +353,9 @@
   <section id="screen-match" class="screen">
     <div class="match-header">
       <div class="score-box">
-        <span id="match-home-name">בית</span>
+        <span class="score-side"><span id="match-home-crest" class="match-crest"></span><span id="match-home-name">בית</span></span>
         <span id="match-score">0 - 0</span>
-        <span id="match-away-name">חוץ</span>
+        <span class="score-side"><span id="match-away-name">חוץ</span><span id="match-away-crest" class="match-crest"></span></span>
       </div>
       <div class="match-clock"><span id="match-minute">0</span>'</div>
     </div>
@@ -449,6 +455,7 @@
 </div>
 
 <script src="js/data.js"></script>
+<script src="js/crest.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/aim.js"></script>
 <script src="js/dribble.js"></script>

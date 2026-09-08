@@ -1,10 +1,11 @@
-const CACHE_NAME = "star-striker-v6";
+const CACHE_NAME = "star-striker-v7";
 const ASSETS = [
   "./",
   "./index.html",
   "./style.css",
   "./manifest.json",
   "./js/data.js",
+  "./js/crest.js",
   "./js/engine.js",
   "./js/aim.js",
   "./js/dribble.js",

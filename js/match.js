@@ -52,6 +52,8 @@ const MatchController = {
 
     $("#match-home-name").textContent = homeClub.name;
     $("#match-away-name").textContent = awayClub.name;
+    $("#match-home-crest").innerHTML = clubCrestSVG(homeClub, 30);
+    $("#match-away-crest").innerHTML = clubCrestSVG(awayClub, 30);
     $("#match-score").textContent = "0 - 0";
     $("#match-score").classList.remove("bump");
     $("#match-minute").textContent = "0";

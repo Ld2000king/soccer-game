@@ -620,11 +620,13 @@ const Career = {
       const mine = CLUBS.find(c=>c.id===p.clubId);
       this.state.leagueId = mine ? mine.league : "il";
     }
+    // clubs were deep-copied into the save before leagues and crests existed,
+    // so top those fields up from the static list rather than leaving every
+    // old-save club as a default star badge
     this.state.clubs.forEach(c=>{
-      if(c.league==null){
-        const ref = CLUBS.find(x=>x.id===c.id);
-        c.league = ref ? ref.league : this.state.leagueId;
-      }
+      const ref = CLUBS.find(x=>x.id===c.id);
+      if(c.league==null) c.league = ref ? ref.league : this.state.leagueId;
+      if(c.crest==null && ref) c.crest = ref.crest;
     });
   },
   hasSave(){
