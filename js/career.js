@@ -30,14 +30,17 @@ const Career = {
         lastRating:null, starMan:0, ratingsSum:0, ratingsCount:0,
       },
       season:1, week:1,
-      clubs: JSON.parse(JSON.stringify(CLUBS)),
+      leagueId: club.league,
+      // only the player's own league is simulated week to week — moving abroad
+      // swaps this out for the new league's clubs (see _enterLeague)
+      clubs: JSON.parse(JSON.stringify(clubsInLeague(club.league))),
       table: {}, // clubId -> {p,w,d,l,gf,ga,pts}
       fixtures: [], // list of {round, home, away}
       news: [],
       pendingTransfer: null,
       pendingEvent: null,
     };
-    CLUBS.forEach(c=> this.state.table[c.id] = {p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0});
+    this._resetTable();
     this._genFixtures();
     this.addNews(`ברוך הבא ל${club.name}! תתחיל להוכיח את עצמך.`);
     this.save();
@@ -65,8 +68,32 @@ const Career = {
     this.state.fixtures = fixtures;
   },
 
-  getClub(id){ return this.state.clubs.find(c=>c.id===id); },
+  // clubs from the player's own league carry live season state, so prefer those;
+  // fall back to the static list so a foreign club (a transfer offer from
+  // abroad, or the club we just left) still resolves to a name and colours.
+  getClub(id){
+    return this.state.clubs.find(c=>c.id===id) || CLUBS.find(c=>c.id===id);
+  },
   myClub(){ return this.getClub(this.state.player.clubId); },
+  myLeague(){ return getLeague(this.state.leagueId); },
+
+  _resetTable(){
+    this.state.table = {};
+    this.state.clubs.forEach(c=> this.state.table[c.id] = {p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0});
+  },
+
+  // Switch the simulated league — used when a transfer takes the player abroad.
+  // The new league starts fresh: its own clubs, a blank table and new fixtures.
+  _enterLeague(leagueId){
+    if(this.state.leagueId===leagueId) return;
+    this.state.leagueId = leagueId;
+    this.state.clubs = JSON.parse(JSON.stringify(clubsInLeague(leagueId)));
+    this._resetTable();
+    this._genFixtures();
+    // fixture lists are the same length for every league today, but clamp so a
+    // future league with fewer clubs can't strand the season past its last round
+    if(this.state.week > this.state.fixtures.length) this.state.week = this.state.fixtures.length;
+  },
 
   currentRoundFixtures(){
     const w = this.state.week;
@@ -440,7 +467,7 @@ const Career = {
     }
     this.state.season++;
     this.state.week=1;
-    Object.keys(this.state.table).forEach(id=> this.state.table[id]={p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0});
+    this._resetTable();
     this._genFixtures();
 
     // wage/money payout roughly weekly during season, small bonus here
@@ -456,14 +483,29 @@ const Career = {
   _generateTransferOffers(count){
     const p = this.state.player;
     const myRating = this.myClub().rating;
-    const candidates = this.state.clubs
-      .filter(c=>c.id!==p.clubId && c.rating >= myRating-6)
-      .sort((a,b)=> Math.abs(a.rating-(myRating+p.reputation/3)) - Math.abs(b.rating-(myRating+p.reputation/3)))
-      .slice(0,count);
+    // Clubs abroad only come calling once the reputation clears that league's
+    // bar, so the career reads as a ladder: Israel first, then the big leagues.
+    const reachable = CLUBS.filter(c=>{
+      if(c.id===p.clubId) return false;
+      if(c.rating < myRating-6) return false;
+      if(c.league===this.state.leagueId) return true;
+      return p.reputation >= getLeague(c.league).minRep;
+    });
+    const target = myRating + p.reputation/3;
+    const candidates = reachable
+      .sort((a,b)=> Math.abs(a.rating-target) - Math.abs(b.rating-target))
+      .slice(0, count*2);
     if(candidates.length===0) return;
-    const offers = candidates.map(c=>({
+    // shuffle the shortlist so the same clubs don't appear every single window
+    for(let i=candidates.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+    }
+    const offers = candidates.slice(0,count).map(c=>({
       clubId:c.id,
-      wage: Math.round(p.wage * (1 + (c.rating-myRating)/60 + Math.random()*0.3)),
+      // a move abroad pays a premium on top of the club-quality step up
+      wage: Math.round(p.wage * (1 + (c.rating-myRating)/60 + Math.random()*0.3)
+        * (c.league===this.state.leagueId ? 1 : 1.35)),
       attempts:0,
     }));
     if(this.state.pendingTransfer){
@@ -504,10 +546,19 @@ const Career = {
   acceptTransfer(clubId){
     const p = this.state.player;
     const offer = this.state.pendingTransfer.offers.find(o=>o.clubId===clubId);
+    const club = this.getClub(clubId);
+    const movingAbroad = club.league !== this.state.leagueId;
     p.clubId = clubId;
     p.wage = offer.wage;
     p.contractWeeks = 52;
-    this.addNews(`${p.name} עובר ל${this.getClub(clubId).name}!`);
+    if(movingAbroad){
+      const league = getLeague(club.league);
+      this._enterLeague(club.league);
+      this.addNews(`${p.name} עובר ל${club.name} ומצטרף ל${league.name}! ${league.flag}`);
+      p.reputation += 3; // a move abroad is a headline in itself
+    } else {
+      this.addNews(`${p.name} עובר ל${club.name}!`);
+    }
     this.state.pendingTransfer = null;
     this.save();
   },
@@ -563,6 +614,18 @@ const Career = {
     if(p.starMan==null) p.starMan = 0;
     if(p.ratingsSum==null){ p.ratingsSum = 0; p.ratingsCount = 0; }
     if(p.lastRating===undefined) p.lastRating = null;
+    // saves from before the world leagues existed hold the ten Israeli clubs
+    // with no league tag — they carry on in the league they were already in
+    if(this.state.leagueId==null){
+      const mine = CLUBS.find(c=>c.id===p.clubId);
+      this.state.leagueId = mine ? mine.league : "il";
+    }
+    this.state.clubs.forEach(c=>{
+      if(c.league==null){
+        const ref = CLUBS.find(x=>x.id===c.id);
+        c.league = ref ? ref.league : this.state.leagueId;
+      }
+    });
   },
   hasSave(){
     return !!localStorage.getItem(SAVE_KEY);

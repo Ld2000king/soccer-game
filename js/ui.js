@@ -9,12 +9,12 @@ function showScreen(id){
 }
 
 // ---------- CREATE SCREEN ----------
-let createState = { position:null, clubId:null };
+let createState = { position:null, clubId:null, leagueId:null };
 
-function initCreateScreen(){
+function renderClubPicker(leagueId){
   const grid = $("#club-picker");
   grid.innerHTML = "";
-  CLUBS.slice().sort((a,b)=>a.rating-b.rating).forEach(c=>{
+  clubsInLeague(leagueId).slice().sort((a,b)=>a.rating-b.rating).forEach(c=>{
     const el = document.createElement("div");
     el.className = "club-card";
     el.dataset.id = c.id;
@@ -31,6 +31,26 @@ function initCreateScreen(){
     });
     grid.appendChild(el);
   });
+  // the previous pick belongs to the league we just left
+  createState.clubId = null;
+  updateStartButton();
+}
+
+function initCreateScreen(){
+  const leagues = $("#league-picker");
+  leagues.innerHTML = LEAGUES.map((l,i)=>
+    `<button class="chip league-chip ${i===0?'selected':''}" data-league="${l.id}">${l.flag} ${l.name}</button>`
+  ).join("");
+  $$("#league-picker .league-chip").forEach(chip=>{
+    chip.addEventListener("click", ()=>{
+      $$("#league-picker .league-chip").forEach(c=>c.classList.remove("selected"));
+      chip.classList.add("selected");
+      createState.leagueId = chip.dataset.league;
+      renderClubPicker(chip.dataset.league);
+    });
+  });
+  createState.leagueId = LEAGUES[0].id;
+  renderClubPicker(LEAGUES[0].id);
 
   $$(".chip[data-pos]").forEach(chip=>{
     chip.addEventListener("click", ()=>{
@@ -103,6 +123,8 @@ function renderDashboard(){
   });
 
   // league table
+  const league = Career.myLeague();
+  $("#league-table-title").textContent = `${league.flag} ${league.name} — ${league.country}`;
   const rows = Career.sortedTable();
   let html = "<table><tr><th>מועדון</th><th>מ</th><th>נ</th><th>ת</th><th>הפ</th><th>הפ׳</th><th>נק</th></tr>";
   rows.forEach(r=>{
@@ -500,12 +522,15 @@ function renderTransferScreen(){
   grid.innerHTML = "";
   pt.offers.forEach(o=>{
     const c = Career.getClub(o.clubId);
+    const abroad = c.league !== Career.state.leagueId;
+    const league = getLeague(c.league);
     const el = document.createElement("div");
-    el.className = "club-card flip-card";
+    el.className = "club-card flip-card" + (abroad ? " offer-foreign" : "");
     el.innerHTML = `
       <div class="flip-card-inner">
         <div class="flip-card-back"><span class="flip-card-mark">?</span></div>
         <div class="flip-card-front">
+          ${abroad ? `<div class="offer-abroad">${league.flag} ${league.name}</div>` : ""}
           <div class="club-crest" style="background:${c.primary}; color:${c.secondary}; border-color:${c.secondary}">${crestInitials(c)}</div>
           <div class="club-name">${c.name}</div>
           <div class="club-rating">דירוג ${c.rating} • שכר ${o.wage}₪/שבוע</div>
@@ -618,25 +643,38 @@ document.addEventListener("DOMContentLoaded", ()=>{
     "screen-career-stats": renderCareerStats,
     "screen-lifestyle": renderLifestyleScreen,
   };
+  // a sub-screen reached from the dashboard's bottom nav should go back to the
+  // dashboard, not dump the player into the hub they never opened
+  let subScreenOrigin = "screen-hub";
   function openScreen(id){
+    if(id!=="screen-hub"){
+      const current = document.querySelector(".screen.active");
+      if(current && (current.id==="screen-dashboard" || current.id==="screen-hub")){
+        subScreenOrigin = current.id;
+      }
+    }
     const render = SCREEN_RENDERERS[id];
     if(render) render();
     showScreen(id);
   }
 
   $("#btn-hub").addEventListener("click", ()=> openScreen("screen-hub"));
-  $$(".hub-tile[data-goto]").forEach(t=>{
+  // hub tiles, the dashboard's bottom nav and the tappable currency pills all
+  // route through the same data-goto contract
+  $$("[data-goto]").forEach(t=>{
     t.addEventListener("click", ()=> openScreen(t.dataset.goto));
   });
-  // every sub-screen's back arrow returns to the hub, except the hub itself
+  // back goes wherever the screen was opened from — the hub returns to the dashboard
+  function goBackFromSub(screen){
+    if(screen && screen.id==="screen-hub") goDashboard();
+    else if(subScreenOrigin==="screen-dashboard") goDashboard();
+    else openScreen("screen-hub");
+  }
   $$("[data-back]").forEach(b=>{
     const screen = b.closest(".screen");
-    b.addEventListener("click", ()=>{
-      if(screen && screen.id==="screen-hub") goDashboard();
-      else openScreen("screen-hub");
-    });
+    b.addEventListener("click", ()=> goBackFromSub(screen));
   });
-  $("#btn-lifestyle-back").addEventListener("click", ()=> openScreen("screen-hub"));
+  $("#btn-lifestyle-back").addEventListener("click", ()=> goBackFromSub($("#screen-lifestyle")));
 
   $$(".sub-tab[data-shoptab]").forEach(t=>{
     t.addEventListener("click", ()=>{ shopTab = t.dataset.shoptab; renderShop(); });

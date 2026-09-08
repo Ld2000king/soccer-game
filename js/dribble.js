@@ -69,10 +69,18 @@ class DribbleChallenge{
   _resolve(userLaneId){
     this.locked = true;
     const defLaneId = this._defenderPick(userLaneId);
-    const chance = this._successChance(userLaneId, defLaneId);
-    const success = Math.random() < chance;
-    this.hint.textContent = success ? "עבר את המגן!" : "המגן חטף את הכדור!";
+
+    // Same rule as the shootout: what the player watches decides it. Running
+    // straight into the defender is a loss, going round the outside is a beat,
+    // and only the shoulder-to-shoulder case is left to a skill roll — a die
+    // throw must never contradict the lane the hero visibly took.
+    const success = userLaneId===defLaneId ? false
+      : dribbleLanesAdjacent(userLaneId, defLaneId) ? Math.random() < this._brushChance()
+      : true;
+
     this._animate(userLaneId, defLaneId, success, ()=>{
+      // after the play, so the hint no longer gives the result away up front
+      this.hint.textContent = success ? "עבר את המגן!" : "המגן חטף את הכדור!";
       setTimeout(()=> this.onResolve(success ? 1 : 0), 450);
     });
   }
@@ -85,13 +93,10 @@ class DribbleChallenge{
     return randPick(others).id;
   }
 
-  _successChance(userLaneId, defLaneId){
-    const skillFactor = Math.max(0.5, Math.min(1.6, 0.55 + (this.attackerSkill-this.defenderSkill)/140));
-    let base;
-    if(userLaneId===defLaneId) base = 0.32;
-    else if(dribbleLanesAdjacent(userLaneId, defLaneId)) base = 0.68;
-    else base = 0.88;
-    return Math.max(0.08, Math.min(0.95, base*skillFactor));
+  // only used for the contested case: hero and defender end up in neighbouring
+  // lanes and brush shoulders, so the better player usually comes out with it
+  _brushChance(){
+    return Math.max(0.2, Math.min(0.92, 0.62 + (this.attackerSkill-this.defenderSkill)/140));
   }
 
   _animate(userLaneId, defLaneId, success, done){

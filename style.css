@@ -78,6 +78,45 @@ body{
   100%{transform:scale(1.12) translate(-1.5%,-1%);}
 }
 
+/* Bouncing footballs across the backdrop. Each ball owns its size, bounce
+   height, tempo and spin via inline custom properties so no two share a
+   rhythm — a grid of identical bounces reads as a machine, not as play. */
+.menu-balls{position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:1;}
+.mball{
+  position:absolute; bottom:-6px;
+  width:var(--size,30px); height:var(--size,30px);
+  opacity:.72;
+  animation:
+    mball-bounce var(--dur,3s) cubic-bezier(0,.55,.45,1) infinite alternate,
+    mball-drift calc(var(--dur,3s) * 3.3) ease-in-out infinite alternate;
+  animation-delay:var(--delay,0s);
+}
+.mball::before{
+  content:""; display:block; width:100%; height:100%; border-radius:50%;
+  /* a football drawn in gradients: centre pentagon, three shoulder patches.
+     The patches stay small — oversized ones stop reading as a ball. */
+  background:
+    radial-gradient(circle at 50% 30%, #1a1f28 0 13%, transparent 14%),
+    radial-gradient(circle at 20% 62%, #1a1f28 0 10%, transparent 11%),
+    radial-gradient(circle at 80% 62%, #1a1f28 0 10%, transparent 11%),
+    radial-gradient(circle at 50% 90%, #1a1f28 0 10%, transparent 11%),
+    radial-gradient(circle at 36% 28%, #ffffff, #f2f7fc 55%, #b9cde0);
+  box-shadow:0 0 16px rgba(124,200,248,.35), inset -2px -3px 7px rgba(0,0,0,.28);
+  animation:mball-spin var(--spin,5s) linear infinite;
+}
+/* the squash sits in the bounce itself: flattened at the floor, stretched
+   just after take-off, round at the top of the arc */
+@keyframes mball-bounce{
+  0%  {transform:translateY(0) scale(1.16,.84);}
+  12% {transform:translateY(calc(var(--h,40vh) * -.16)) scale(.94,1.08);}
+  100%{transform:translateY(calc(var(--h,40vh) * -1)) scale(1,1);}
+}
+@keyframes mball-drift{
+  0%{margin-left:0;}
+  100%{margin-left:var(--drift,20px);}
+}
+@keyframes mball-spin{to{transform:rotate(360deg);}}
+
 .menu-content{position:relative; text-align:center; padding:40px 24px; z-index:2;}
 
 .menu-badge{display:flex; align-items:center; justify-content:center; width:96px; height:96px; position:relative; margin:0 auto 8px;}
@@ -276,9 +315,22 @@ body{
   transition:border-color .15s ease;
 }
 .flip-card.flipped:hover .flip-card-front{border-color:var(--px-lime); box-shadow:var(--px-glow-lime);}
+/* an offer from another country is the headline of the card, so it sits above
+   the crest rather than being buried in the rating line */
+.offer-abroad{
+  font-size:10px; font-weight:800; color:var(--px-lime);
+  margin-bottom:6px; text-shadow:var(--px-glow-lime);
+}
+.flip-card.offer-foreign .flip-card-back{border-color:var(--px-lime); box-shadow:var(--px-glow-lime);}
+
+.league-picker{gap:8px;}
+.league-chip{padding:8px 14px; font-size:13px;}
+
 @media (prefers-reduced-motion:reduce){
   .transfer-reveal-text, .flip-card-mark{animation:none;}
   .flip-card-inner{transition:none;}
+  .mball{animation:none;}
+  .mball::before{animation:none;}
 }
 
 /* ===== Dashboard (proux) ===== */
@@ -431,6 +483,32 @@ body{
   .card-table, .card-news{display:none; flex:1; min-height:0;}
   .card-table.panel-active, .card-news.panel-active{display:flex;}
 }
+/* Bottom shortcut bar — the shop/skills/lifestyle screens were only reachable
+   from the hamburger, so players never found where money and star bucks go. */
+.dash-nav{
+  flex-shrink:0; position:relative; z-index:5;
+  display:flex; gap:6px; padding:8px 14px calc(8px + env(safe-area-inset-bottom));
+  background:rgba(7,17,29,.85); backdrop-filter:blur(6px);
+  border-top:1px solid var(--px-line);
+}
+.dash-nav-btn{
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+  padding:8px 2px; border-radius:12px; cursor:pointer; font-family:inherit;
+  background:var(--px-bg-2); border:1px solid var(--px-line); color:var(--px-text-dim,#9fb6cc);
+  transition:border-color .18s ease, box-shadow .18s ease, color .18s ease;
+}
+.dash-nav-btn:hover, .dash-nav-btn:focus-visible{
+  border-color:var(--px-rim); color:#fff; box-shadow:var(--px-glow-blue); outline:none;
+}
+.dash-nav-icon{font-size:19px; line-height:1;}
+.dash-nav-label{font-size:10px; font-weight:700;}
+
+/* the money / star-bucks readouts double as the way in to what they buy */
+.hud-pill-btn{cursor:pointer; font-family:inherit; color:#fff;}
+.hud-pill-btn:hover, .hud-pill-btn:focus-visible{
+  border-color:var(--px-rim); box-shadow:var(--px-glow-blue); outline:none;
+}
+
 @media (prefers-reduced-motion:reduce){
   #screen-dashboard::before, .avatar::before, .play-action::after, .stat-fill::after, .league-table tr.me td:first-child::before{animation:none;}
 }
@@ -449,6 +527,10 @@ body{
 .timing-marker{
   position:absolute; top:-4px; width:6px; height:34px; background:var(--accent); border-radius:3px;
   box-shadow:0 0 12px rgba(255,210,63,.8);
+  /* the script sets left:<pos>% and then scores <pos> as the marker's centre —
+     without this the 6px bar hangs off to one side of the position it is being
+     judged at, so a hit that looks inside the green zone can score as a miss */
+  transform:translateX(-50%);
 }
 .training-result{margin-top:18px; font-size:15px; font-weight:700; min-height:24px;}
 

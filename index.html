@@ -26,6 +26,19 @@
 
   <!-- ===== מסך פתיחה (proux) ===== -->
   <section id="screen-menu" class="screen active">
+    <!-- ambient bouncing balls behind the content -->
+    <div class="menu-balls" aria-hidden="true">
+      <!-- the high bounces stay out at the edges; balls under the wordmark and
+           buttons stay low so nothing bounces through the text -->
+      <span class="mball" style="left:5%;  --size:38px; --h:56vh; --dur:3.1s; --delay:0s;   --drift:26px;  --spin:5.5s"></span>
+      <span class="mball" style="left:24%; --size:22px; --h:26vh; --dur:2.3s; --delay:.7s;  --drift:-18px; --spin:4s"></span>
+      <span class="mball" style="left:47%; --size:34px; --h:17vh; --dur:2.9s; --delay:1.4s; --drift:34px;  --spin:7s"></span>
+      <span class="mball" style="left:68%; --size:28px; --h:23vh; --dur:2.7s; --delay:.3s;  --drift:-24px; --spin:4.6s"></span>
+      <span class="mball" style="left:90%; --size:44px; --h:60vh; --dur:3.4s; --delay:2s;   --drift:20px;  --spin:6.2s"></span>
+      <span class="mball" style="left:14%; --size:18px; --h:38vh; --dur:2.1s; --delay:1.8s; --drift:-14px; --spin:3.4s"></span>
+      <span class="mball" style="left:58%; --size:20px; --h:14vh; --dur:2.5s; --delay:2.6s; --drift:16px;  --spin:3.8s"></span>
+      <span class="mball" style="left:80%; --size:16px; --h:34vh; --dur:1.9s; --delay:1.1s; --drift:-12px; --spin:3.1s"></span>
+    </div>
     <div class="menu-content">
       <div class="menu-badge">
         <div class="menu-badge-glow"></div>
@@ -81,7 +94,10 @@
         <button class="chip" data-pos="GK">שוער</button>
       </div>
 
-      <label class="field-label">מועדון ראשון (ליגה נמוכה)</label>
+      <label class="field-label">ליגה</label>
+      <div id="league-picker" class="chip-row league-picker"></div>
+
+      <label class="field-label">מועדון ראשון</label>
       <div id="club-picker" class="club-grid"></div>
 
       <button id="btn-start-career" class="btn btn-primary btn-lg" disabled>התחל קריירה</button>
@@ -104,8 +120,12 @@
       <div class="topbar-stats">
         <div class="hud-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v4M16 2v4M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/></svg><span id="hud-age">18</span></div>
         <div class="hud-pill"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.6 1.7 7-6.3-4-6.3 4 1.7-7L2 9.5l7.1-.6z"/></svg><span id="hud-rep">0</span></div>
-        <div class="hud-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 15.5c.5 1 1.5 1.5 2.5 1.5s2-.5 2.5-1.5M9 9.5c0-1 1-2 3-2s3 1 3 2-1.2 1.6-2 2.2"/></svg><span id="hud-money">0</span>₪</div>
-        <div class="hud-pill sb-pill"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.6 1.7 7-6.3-4-6.3 4 1.7-7L2 9.5l7.1-.6z"/></svg><span id="hud-starbucks">0</span></div>
+        <button class="hud-pill hud-pill-btn" data-goto="screen-shop" title="כסף — לקנייה של נעליים, משקאות ולייף סטייל. לחץ כדי לפתוח את החנות">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 15.5c.5 1 1.5 1.5 2.5 1.5s2-.5 2.5-1.5M9 9.5c0-1 1-2 3-2s3 1 3 2-1.2 1.6-2 2.2"/></svg><span id="hud-money">0</span>₪
+        </button>
+        <button class="hud-pill sb-pill hud-pill-btn" data-goto="screen-skills" title="סטארבקס — מטבע שמרוויחים מציונים במשחק ומשדרגים איתו יכולות. לחץ כדי לפתוח את מסך הכישורים">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.6 1.7 7-6.3-4-6.3 4 1.7-7L2 9.5l7.1-.6z"/></svg><span id="hud-starbucks">0</span>
+        </button>
         <div class="hud-pill energy-pill"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg><span id="hud-energy-text">100</span>%</div>
       </div>
     </header>
@@ -146,7 +166,7 @@
       </div>
 
       <div class="card card-table panel-active" data-panel="table">
-        <h3>טבלת הליגה</h3>
+        <h3 id="league-table-title">טבלת הליגה</h3>
         <div id="league-table" class="league-table"></div>
       </div>
 
@@ -155,6 +175,26 @@
         <div id="news-feed" class="news-feed"></div>
       </div>
     </main>
+
+    <!-- always-visible shortcuts: the shop used to be buried behind the
+         hamburger, so nobody found where the money was spent -->
+    <nav class="dash-nav">
+      <button class="dash-nav-btn" data-goto="screen-shop">
+        <span class="dash-nav-icon">👟</span><span class="dash-nav-label">חנות</span>
+      </button>
+      <button class="dash-nav-btn" data-goto="screen-skills">
+        <span class="dash-nav-icon">💫</span><span class="dash-nav-label">כישורים</span>
+      </button>
+      <button class="dash-nav-btn" data-goto="screen-lifestyle">
+        <span class="dash-nav-icon">🏠</span><span class="dash-nav-label">לייף סטייל</span>
+      </button>
+      <button class="dash-nav-btn" data-goto="screen-sponsors">
+        <span class="dash-nav-icon">💼</span><span class="dash-nav-label">חסויות</span>
+      </button>
+      <button class="dash-nav-btn" data-goto="screen-hub">
+        <span class="dash-nav-icon">☰</span><span class="dash-nav-label">עוד</span>
+      </button>
+    </nav>
   </section>
 
 

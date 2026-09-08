@@ -77,14 +77,27 @@ class AimShootout{
       diveZoneId = userZoneId;
       shotZoneId = this._attackerShot();
     }
-    const saveChance = this._saveChance(shotZoneId, diveZoneId);
-    const saved = Math.random() < saveChance;
 
-    this.hint.textContent = this.mode==="shoot"
-      ? (saved ? "השוער קרא את הכיוון וחסם!" : "הרשת רועדת!")
-      : (saved ? "הצלה מדהימה!" : "הכדור נכנס, אין מה לעשות.");
+    // The verdict has to be readable from the picture the player just watched:
+    // keeper on the ball is a save, keeper at the other end is a goal. Only the
+    // one-zone-away case (he got a hand to it) is left to a skill roll, so a
+    // clean beat is never overturned by a dice throw behind the scenes.
+    const reach = diveZoneId===shotZoneId ? "onIt"
+      : zonesAdjacent(shotZoneId, diveZoneId) ? "stretch"
+      : "beaten";
+    const saved = reach==="onIt" ? true
+      : reach==="beaten" ? false
+      : Math.random() < this._stretchSaveChance(shotZoneId);
 
-    this._animate(shotZoneId, diveZoneId, ()=>{
+    // a fingertip save has to look like one, so on a won stretch the keeper
+    // follows the ball rather than landing a zone away from it
+    const diveShown = (saved && reach==="stretch") ? shotZoneId : diveZoneId;
+
+    this._animate(shotZoneId, diveShown, ()=>{
+      // told after the play, not before — the hint used to spoil the result
+      this.hint.textContent = this.mode==="shoot"
+        ? (saved ? "השוער קרא את הכיוון וחסם!" : "הרשת רועדת!")
+        : (saved ? "הצלה מדהימה!" : "הכדור נכנס, אין מה לעשות.");
       const success = this.mode==="shoot" ? !saved : saved;
       setTimeout(()=> this.onResolve(success ? 1 : 0), 500);
     });
@@ -115,14 +128,12 @@ class AimShootout{
     return AIM_ZONES[AIM_ZONES.length-1].id;
   }
 
-  _saveChance(shotZoneId, diveZoneId){
+  // only used for the contested case: the keeper went one zone off and has to
+  // stretch. Corners stay hard to reach, a weak keeper reaches less often.
+  _stretchSaveChance(shotZoneId){
     const zone = zoneById(shotZoneId);
     const skillFactor = clamp01(0.5 + (this.keeperSkill-this.attackerSkill)/150) * 1.4;
-    let chance = zone.saveBase * skillFactor;
-    if(diveZoneId===shotZoneId) { /* full chance */ }
-    else if(zonesAdjacent(shotZoneId, diveZoneId)) chance *= 0.35;
-    else chance *= 0.08;
-    return Math.max(0.03, Math.min(0.95, chance));
+    return Math.max(0.05, Math.min(0.9, zone.saveBase * skillFactor * 0.5));
   }
 
   _animate(shotZoneId, diveZoneId, done){

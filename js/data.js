@@ -2,18 +2,94 @@
 // Club names are deliberately shortened/altered versions inspired by real club identities
 // (colors kept close to reality) to avoid using full official trademarked names.
 
-const CLUBS = [
-  { id:"mtlv", name:"Macabi TA",   city:"Tel Aviv",   primary:"#ffd400", secondary:"#0033a0", rating:82 },
-  { id:"btjr", name:"Beitar Jer",  city:"Jerusalem",  primary:"#111111", secondary:"#ffd400", rating:74 },
-  { id:"hptlv",name:"Hapo'el TA",  city:"Tel Aviv",   primary:"#d21f3c", secondary:"#ffffff", rating:70 },
-  { id:"mhaifa",name:"Macabi Haifa",city:"Haifa",     primary:"#009845", secondary:"#ffffff", rating:78 },
-  { id:"hpbs", name:"Hapo'el B.S", city:"Beer Sheva", primary:"#d21f3c", secondary:"#0033a0", rating:69 },
-  { id:"bsak", name:"Bnei Sakhnin",city:"Sakhnin",    primary:"#0033a0", secondary:"#ffffff", rating:60 },
-  { id:"ashd", name:"FC Ashdod",   city:"Ashdod",     primary:"#0033a0", secondary:"#ffd400", rating:58 },
-  { id:"hphaifa",name:"Hapo'el Haifa",city:"Haifa",   primary:"#d21f3c", secondary:"#111111", rating:56 },
-  { id:"ntny", name:"Netanya SC",  city:"Netanya",    primary:"#ffd400", secondary:"#0033a0", rating:54 },
-  { id:"hpjr", name:"Hapo'el Jer", city:"Jerusalem",  primary:"#d21f3c", secondary:"#111111", rating:52 },
+// Leagues are ordered by prestige — the ladder a career climbs. `minRep` gates
+// which foreign leagues will even look at you when transfer offers are drawn.
+const LEAGUES = [
+  { id:"il", name:"ליגת העל",         country:"ישראל",  flag:"🇮🇱", minRep:0 },
+  { id:"fr", name:"הליגה הצרפתית",    country:"צרפת",   flag:"🇫🇷", minRep:30 },
+  { id:"it", name:"הליגה האיטלקית",   country:"איטליה", flag:"🇮🇹", minRep:40 },
+  { id:"de", name:"הליגה הגרמנית",    country:"גרמניה", flag:"🇩🇪", minRep:45 },
+  { id:"es", name:"הליגה הספרדית",    country:"ספרד",   flag:"🇪🇸", minRep:55 },
+  { id:"en", name:"הליגה האנגלית",    country:"אנגליה", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", minRep:60 },
 ];
+
+function getLeague(id){ return LEAGUES.find(l=>l.id===id) || LEAGUES[0]; }
+
+const CLUBS = [
+  // ---- ישראל ----
+  { id:"mtlv", league:"il", name:"Macabi TA",   city:"Tel Aviv",   primary:"#ffd400", secondary:"#0033a0", rating:82 },
+  { id:"btjr", league:"il", name:"Beitar Jer",  city:"Jerusalem",  primary:"#111111", secondary:"#ffd400", rating:74 },
+  { id:"hptlv",league:"il", name:"Hapo'el TA",  city:"Tel Aviv",   primary:"#d21f3c", secondary:"#ffffff", rating:70 },
+  { id:"mhaifa",league:"il",name:"Macabi Haifa",city:"Haifa",      primary:"#009845", secondary:"#ffffff", rating:78 },
+  { id:"hpbs", league:"il", name:"Hapo'el B.S", city:"Beer Sheva", primary:"#d21f3c", secondary:"#0033a0", rating:69 },
+  { id:"bsak", league:"il", name:"Bnei Sakhnin",city:"Sakhnin",    primary:"#0033a0", secondary:"#ffffff", rating:60 },
+  { id:"ashd", league:"il", name:"FC Ashdod",   city:"Ashdod",     primary:"#0033a0", secondary:"#ffd400", rating:58 },
+  { id:"hphaifa",league:"il",name:"Hapo'el Haifa",city:"Haifa",    primary:"#d21f3c", secondary:"#111111", rating:56 },
+  { id:"ntny", league:"il", name:"Netanya SC",  city:"Netanya",    primary:"#ffd400", secondary:"#0033a0", rating:54 },
+  { id:"hpjr", league:"il", name:"Hapo'el Jer", city:"Jerusalem",  primary:"#d21f3c", secondary:"#111111", rating:52 },
+
+  // ---- צרפת ----
+  { id:"parsg", league:"fr", name:"Paris SG",      city:"Paris",     primary:"#004170", secondary:"#da291c", rating:86 },
+  { id:"marsw", league:"fr", name:"Marseille W.",  city:"Marseille", primary:"#2faee0", secondary:"#ffffff", rating:76 },
+  { id:"lyonl", league:"fr", name:"Lyon Lions",    city:"Lyon",      primary:"#ffffff", secondary:"#da291c", rating:75 },
+  { id:"monrg", league:"fr", name:"Monaco Rouge",  city:"Monaco",    primary:"#e63946", secondary:"#ffffff", rating:78 },
+  { id:"lilld", league:"fr", name:"Lille Dogues",  city:"Lille",     primary:"#e01e13", secondary:"#ffffff", rating:74 },
+  { id:"niceg", league:"fr", name:"Nice Aiglons",  city:"Nice",      primary:"#d40000", secondary:"#111111", rating:72 },
+  { id:"rennr", league:"fr", name:"Rennes Rouge",  city:"Rennes",    primary:"#e23028", secondary:"#111111", rating:71 },
+  { id:"lensg", league:"fr", name:"Lens Or-Sang",  city:"Lens",      primary:"#ffe500", secondary:"#e01e13", rating:70 },
+  { id:"nantc", league:"fr", name:"Nantes Canaris",city:"Nantes",    primary:"#fcd700", secondary:"#008d36", rating:66 },
+  { id:"strsb", league:"fr", name:"Strasbourg B.", city:"Strasbourg",primary:"#0066b2", secondary:"#ffffff", rating:64 },
+
+  // ---- איטליה ----
+  { id:"milrn", league:"it", name:"Milan Rosso",   city:"Milano",    primary:"#fb090b", secondary:"#111111", rating:85 },
+  { id:"milnz", league:"it", name:"Milan Nero",    city:"Milano",    primary:"#010e80", secondary:"#111111", rating:87 },
+  { id:"torbn", league:"it", name:"Torino Bianco", city:"Torino",    primary:"#111111", secondary:"#ffffff", rating:86 },
+  { id:"napaz", league:"it", name:"Napoli Azzurri",city:"Napoli",    primary:"#12a0d7", secondary:"#ffffff", rating:84 },
+  { id:"romgr", league:"it", name:"Roma Giallo",   city:"Roma",      primary:"#8e1f2f", secondary:"#f0bc42", rating:80 },
+  { id:"lazbc", league:"it", name:"Lazio Celeste", city:"Roma",      primary:"#87d8f7", secondary:"#ffffff", rating:78 },
+  { id:"bergb", league:"it", name:"Bergamo Blues", city:"Bergamo",   primary:"#1d1d1b", secondary:"#0066b3", rating:79 },
+  { id:"fiovl", league:"it", name:"Firenze Viola", city:"Firenze",   primary:"#592c82", secondary:"#ffffff", rating:75 },
+  { id:"bolrb", league:"it", name:"Bologna R.B.",  city:"Bologna",   primary:"#1a2f48", secondary:"#d2122e", rating:72 },
+  { id:"torgr", league:"it", name:"Torino Granata",city:"Torino",    primary:"#881600", secondary:"#ffffff", rating:70 },
+
+  // ---- גרמניה ----
+  { id:"bayrd", league:"de", name:"Bayern Reds",   city:"München",   primary:"#dc052d", secondary:"#0066b2", rating:89 },
+  { id:"dorty", league:"de", name:"Dortmund Y.",   city:"Dortmund",  primary:"#fde100", secondary:"#111111", rating:83 },
+  { id:"leipb", league:"de", name:"Leipzig Bulls", city:"Leipzig",   primary:"#dd0741", secondary:"#ffffff", rating:81 },
+  { id:"leverk",league:"de", name:"Leverkusen W.", city:"Leverkusen",primary:"#e32221", secondary:"#111111", rating:82 },
+  { id:"frnke", league:"de", name:"Frankfurt E.",  city:"Frankfurt", primary:"#e1000f", secondary:"#111111", rating:76 },
+  { id:"bremg", league:"de", name:"Bremen Greens", city:"Bremen",    primary:"#1d9053", secondary:"#ffffff", rating:71 },
+  { id:"gladf", league:"de", name:"Gladbach Foals",city:"M.Gladbach",primary:"#111111", secondary:"#00a94f", rating:72 },
+  { id:"stutr", league:"de", name:"Stuttgart Reds",city:"Stuttgart", primary:"#ffffff", secondary:"#e32219", rating:75 },
+  { id:"wolfw", league:"de", name:"Wolfsburg W.",  city:"Wolfsburg", primary:"#65b32e", secondary:"#ffffff", rating:70 },
+  { id:"freib", league:"de", name:"Freiburg Reds", city:"Freiburg",  primary:"#111111", secondary:"#e2001a", rating:68 },
+
+  // ---- ספרד ----
+  { id:"madbl", league:"es", name:"Madrid Blancos",city:"Madrid",    primary:"#ffffff", secondary:"#febe10", rating:92 },
+  { id:"barbg", league:"es", name:"Barca Blaugrana",city:"Barcelona",primary:"#a50044", secondary:"#004d98", rating:90 },
+  { id:"madrb", league:"es", name:"Madrid Rojiblanco",city:"Madrid", primary:"#cb3524", secondary:"#272e61", rating:85 },
+  { id:"sevrj", league:"es", name:"Sevilla Rojo",  city:"Sevilla",   primary:"#d9042b", secondary:"#ffffff", rating:78 },
+  { id:"bilbl", league:"es", name:"Bilbao Lions",  city:"Bilbao",    primary:"#ee2523", secondary:"#ffffff", rating:77 },
+  { id:"valbt", league:"es", name:"Valencia Bats", city:"Valencia",  primary:"#ffffff", secondary:"#ee3524", rating:74 },
+  { id:"betvr", league:"es", name:"Betis Verde",   city:"Sevilla",   primary:"#00954c", secondary:"#ffffff", rating:76 },
+  { id:"socbl", league:"es", name:"Sociedad Txuri",city:"San Seb.",  primary:"#0067b1", secondary:"#ffffff", rating:75 },
+  { id:"vilay", league:"es", name:"Villarreal Y.", city:"Villarreal",primary:"#ffe667", secondary:"#005187", rating:73 },
+  { id:"girrd", league:"es", name:"Girona Reds",   city:"Girona",    primary:"#d50032", secondary:"#ffffff", rating:71 },
+
+  // ---- אנגליה ----
+  { id:"manrd", league:"en", name:"Man Reds",      city:"Manchester",primary:"#da291c", secondary:"#fbe122", rating:85 },
+  { id:"mansk", league:"en", name:"Man Sky",       city:"Manchester",primary:"#6cabdd", secondary:"#1c2c5b", rating:92 },
+  { id:"lonbl", league:"en", name:"London Blues",  city:"London",    primary:"#034694", secondary:"#ffffff", rating:84 },
+  { id:"nlong", league:"en", name:"North London",  city:"London",    primary:"#ef0107", secondary:"#ffffff", rating:88 },
+  { id:"spurs", league:"en", name:"Spurs N17",     city:"London",    primary:"#ffffff", secondary:"#132257", rating:82 },
+  { id:"mersr", league:"en", name:"Mersey Reds",   city:"Liverpool", primary:"#c8102e", secondary:"#00b2a9", rating:90 },
+  { id:"toonm", league:"en", name:"Toon Army",     city:"Newcastle", primary:"#241f20", secondary:"#ffffff", rating:80 },
+  { id:"villc", league:"en", name:"Villa Claret",  city:"Birmingham",primary:"#670e36", secondary:"#95bfe5", rating:81 },
+  { id:"whirn", league:"en", name:"West Ham Irons",city:"London",    primary:"#7a263a", secondary:"#1bb1e7", rating:76 },
+  { id:"seagl", league:"en", name:"Seagulls FC",   city:"Brighton",  primary:"#0057b8", secondary:"#ffffff", rating:75 },
+];
+
+function clubsInLeague(leagueId){ return CLUBS.filter(c=>c.league===leagueId); }
 
 const POSITIONS = {
   FWD:{ label:"חלוץ", key:["shooting","pace","dribbling"] },
