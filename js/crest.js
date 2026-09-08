@@ -200,3 +200,36 @@ function clubCrestSVG(club, size=46){
   <g fill="none" stroke="${rim}" stroke-width="5" clip-path="url(#${id})">${outline}</g>
 </svg>`;
 }
+
+// ---- Match kits ----
+// The two sides on the pitch have to be told apart at a glance on a small
+// canvas, which is the same problem real football solves with a change strip:
+// the visiting side switches when its shirt is too close to the home one.
+// The player's own club never changes — seeing your own colours is the point.
+function _kitClash(a, b){ return _crestContrast(a, b) < 1.7; }
+
+function matchKits(myClub, oppClub){
+  const mine = { shirt: myClub.primary, shorts: myClub.secondary };
+  let theirs = { shirt: oppClub.primary, shorts: oppClub.secondary };
+
+  if(_kitClash(mine.shirt, theirs.shirt)){
+    theirs = { shirt: oppClub.secondary, shorts: oppClub.primary };
+  }
+  if(_kitClash(mine.shirt, theirs.shirt)){
+    // both of the opponent's colours clash, so they take a neutral change
+    // strip chosen against the shirt we are already showing
+    theirs = _crestLum(mine.shirt) > 0.4
+      ? { shirt:"#1b2740", shorts:"#e8eef7" }
+      : { shirt:"#eef2f8", shorts:"#1b2740" };
+  }
+  // shorts that match the shirt erase the figure's waist, so nudge them apart
+  if(_kitClash(mine.shirt, mine.shorts))   mine.shorts   = _crestLum(mine.shirt)   > 0.4 ? "#1b2740" : "#eef2f8";
+  if(_kitClash(theirs.shirt, theirs.shorts)) theirs.shorts = _crestLum(theirs.shirt) > 0.4 ? "#1b2740" : "#eef2f8";
+
+  return { mine, theirs };
+}
+
+// the "this one is you" ring has to stay visible over your own shirt colour
+function heroRingColor(shirt){
+  return _crestContrast(shirt, "#c2ff40") >= 1.9 ? "#c2ff40" : "#ffffff";
+}

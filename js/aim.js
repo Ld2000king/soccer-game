@@ -24,13 +24,16 @@ function zoneCenter(zone, W, H){
 
 class AimShootout{
   // mode: "shoot" (user aims at goal, AI keeper reacts) or "save" (user is keeper choosing dive, AI striker shoots)
-  constructor(canvas, hint, mode, {attackerSkill, keeperSkill}){
+  constructor(canvas, hint, mode, {attackerSkill, keeperSkill, keeperKit}){
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     this.hint = hint;
     this.mode = mode;
     this.attackerSkill = attackerSkill;
     this.keeperSkill = keeperSkill;
+    // the keeper belongs to a real club: yours when you are diving, the
+    // opponent's when you are shooting at them
+    this.keeperKit = keeperKit || { shirt:"#ffd23f", shorts:"#111111" };
     this.W = canvas.width; this.H = canvas.height;
     this.locked = false;
     this.t = 0;
@@ -222,20 +225,21 @@ class AimShootout{
     ctx.beginPath(); ctx.moveTo(x+2.5, y+2); ctx.lineTo(x+2.5-lean*4, y+12); ctx.stroke();
 
     // shorts
-    ctx.fillStyle = "#111";
+    ctx.fillStyle = this.keeperKit.shorts;
     ctx.fillRect(x-4.5, y, 9, 4);
 
-    // torso / goalkeeper jersey (bright, distinct color)
+    // torso / keeper jersey in the club's colours
     ctx.beginPath();
     ctx.ellipse(x, y-4, 7, 8, lean*0.3, 0, Math.PI*2);
-    ctx.fillStyle = "#ffd23f";
+    ctx.fillStyle = this.keeperKit.shirt;
     ctx.fill();
-    ctx.strokeStyle = "#04231a"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.strokeStyle = "rgba(4,12,8,.75)"; ctx.lineWidth = 2.2; ctx.stroke();
+    ctx.strokeStyle = this.keeperKit.shorts; ctx.lineWidth = 1.2; ctx.stroke();
 
     // arms — spread wide when diving, relaxed when idle
     const armSpread = diving ? 13 : 6;
     const armLift = diving ? -4 : -6;
-    ctx.strokeStyle = "#ffd23f"; ctx.lineWidth = 3;
+    ctx.strokeStyle = this.keeperKit.shirt; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(x-4, y-9); ctx.lineTo(x-armSpread, y+armLift); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(x+4, y-9); ctx.lineTo(x+armSpread, y+armLift); ctx.stroke();
     // gloves

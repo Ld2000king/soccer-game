@@ -15,12 +15,14 @@ function dribbleLanesAdjacent(a,b){
 }
 
 class DribbleChallenge{
-  constructor(canvas, hint, {attackerSkill, defenderSkill}){
+  constructor(canvas, hint, {attackerSkill, defenderSkill, kits}){
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     this.hint = hint;
     this.attackerSkill = attackerSkill;
     this.defenderSkill = defenderSkill;
+    // both figures wear their real club's colours; the caller resolves any clash
+    this.kits = kits || { mine:{shirt:"#00b386", shorts:"#ffd23f"}, theirs:{shirt:"#d21f3c", shorts:"#ffffff"} };
     this.W = canvas.width; this.H = canvas.height;
     this.locked = false;
     this.phase = "idle"; // idle -> animating -> done
@@ -152,8 +154,8 @@ class DribbleChallenge{
     ctx.beginPath(); ctx.moveTo(2*W/3,0); ctx.lineTo(2*W/3,H); ctx.stroke();
     ctx.setLineDash([]);
 
-    this._drawFigure(this.defender.x, this.defender.y, "#d21f3c", "#ffffff", 1);
-    this._drawFigure(this.hero.x, this.hero.y, "#00b386", "#ffd23f", 1.1, true);
+    this._drawFigure(this.defender.x, this.defender.y, this.kits.theirs.shirt, this.kits.theirs.shorts, 1);
+    this._drawFigure(this.hero.x, this.hero.y, this.kits.mine.shirt, this.kits.mine.shorts, 1.1, true);
 
     // ball
     ctx.beginPath();
@@ -180,12 +182,17 @@ class DribbleChallenge{
     ctx.beginPath();
     ctx.ellipse(x, y-3*s, 7*s, 8*s, 0,0,Math.PI*2);
     ctx.fillStyle = color; ctx.fill();
+    // dark rim first so a green kit still separates from the green pitch,
+    // then the club's second colour on top
+    ctx.lineWidth = 2.6; ctx.strokeStyle = "rgba(4,12,8,.7)"; ctx.stroke();
     ctx.lineWidth = 1.4; ctx.strokeStyle = secondary; ctx.stroke();
 
     if(hero){
+      // the "this one is you" ring used to be gold, which vanished on a yellow
+      // shirt now that kits follow the clubs
       ctx.beginPath();
       ctx.arc(x, y-2*s, 20*s, 0, Math.PI*2);
-      ctx.strokeStyle = "rgba(255,210,63,.7)"; ctx.lineWidth = 2; ctx.stroke();
+      ctx.strokeStyle = heroRingColor(color); ctx.lineWidth = 2.4; ctx.stroke();
     }
 
     ctx.beginPath();

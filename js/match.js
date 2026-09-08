@@ -185,6 +185,11 @@ const MatchController = {
     $("#aim-mode").classList.add("hidden");
     $("#dribble-mode").classList.add("hidden");
 
+    // both sides wear their own club's colours, with the opponent changing
+    // strip if the two shirts are too close to tell apart
+    const myClub = Career.myClub();
+    const kits = matchKits(myClub, ctx.myIsHome ? ctx.awayClub : ctx.homeClub);
+
     if(ev.type==="shoot" || ev.type==="save"){
       $("#aim-mode").classList.remove("hidden");
 
@@ -193,8 +198,10 @@ const MatchController = {
       const mode = ev.type==="shoot" ? "shoot" : "save";
       const attackerSkill = mode==="shoot" ? heroSkill : oppClub.rating;
       const keeperSkill = mode==="shoot" ? oppClub.rating : heroSkill;
+      // shooting means you face their keeper; saving means the keeper is you
+      const keeperKit = mode==="shoot" ? kits.theirs : kits.mine;
 
-      const aim = new AimShootout($("#aim-canvas"), $("#aim-hint"), mode, {attackerSkill, keeperSkill});
+      const aim = new AimShootout($("#aim-canvas"), $("#aim-hint"), mode, {attackerSkill, keeperSkill, keeperKit});
       aim.start((score)=>{
         aim.stop();
         $("#minigame-overlay").classList.add("hidden");
@@ -206,7 +213,7 @@ const MatchController = {
       const heroSkill = Career.overall() + p.reputation/4;
       const oppClub = ctx.myIsHome ? ctx.awayClub : ctx.homeClub;
 
-      const dribble = new DribbleChallenge($("#dribble-canvas"), $("#dribble-hint"), {attackerSkill:heroSkill, defenderSkill:oppClub.rating});
+      const dribble = new DribbleChallenge($("#dribble-canvas"), $("#dribble-hint"), {attackerSkill:heroSkill, defenderSkill:oppClub.rating, kits});
       dribble.start((score)=>{
         dribble.stop();
         $("#minigame-overlay").classList.add("hidden");
