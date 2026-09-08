@@ -523,6 +523,10 @@ function renderTransferScreen(){
   $("#transfer-desc").textContent = isMidSeason
     ? "מועדון מתעניין בשירותיך באמצע העונה!"
     : "מועדונים מציעים לך חוזה חדש. באיזה מועדון תרצה להמשיך?";
+  const mine = Career.myClub();
+  $("#transfer-current-crest").innerHTML = clubCrestSVG(mine, 40);
+  $("#transfer-current-name").textContent = mine.name;
+
   const grid = $("#transfer-offers");
   grid.innerHTML = "";
   pt.offers.forEach(o=>{
@@ -581,7 +585,11 @@ function renderNegotiateScreen(){
   const offer = currentOffer();
   if(!offer){ goDashboard(); return; }
   const c = Career.getClub(negotiateClubId);
+  const from = Career.myClub();
   $("#negotiate-crest").innerHTML = clubCrestSVG(c, 84);
+  $("#negotiate-from-crest").innerHTML = clubCrestSVG(from, 52);
+  $("#negotiate-from-label").textContent = from.name;
+  $("#negotiate-crest-label").textContent = c.name;
   $("#negotiate-club-name").textContent = c.name;
   const nl = getLeague(c.league);
   $("#negotiate-club-rating").textContent = `דירוג מועדון ${c.rating} • ${nl.flag} ${nl.name}`;

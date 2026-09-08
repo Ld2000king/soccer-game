@@ -123,11 +123,21 @@ function _crestContrast(a,b){
   const la = _crestLum(a), lb = _crestLum(b);
   return (Math.max(la,lb)+0.05) / (Math.min(la,lb)+0.05);
 }
-// the motif has to stay legible whatever the club colours are, so pick the
-// club's own second colour only when it actually separates from the field
-function _crestInk(field, secondary){
-  const candidates = [secondary, "#ffffff", "#10161f"];
-  return candidates.reduce((best,c)=> _crestContrast(field,c) > _crestContrast(field,best) ? c : best, candidates[0]);
+// Which colours the motif actually sits on. A solid field is one colour; every
+// patterned field puts the motif across both, and ink that only contrasts with
+// one of them disappears over the other half.
+function _crestFields(pattern, primary, secondary){
+  return pattern==="solid" ? [primary] : [primary, secondary];
+}
+
+// The motif has to stay legible on every field it crosses. Within that, the
+// club's own second colour wins — a badge in the club's colours beats a
+// safely generic black one, so Maccabi's star is blue rather than near-black
+// just because near-black scores a higher contrast ratio on yellow.
+function _crestInk(fields, secondary){
+  const worst = c => Math.min(...fields.map(f=>_crestContrast(f,c)));
+  if(worst(secondary) >= 4.5) return secondary;
+  return ["#ffffff","#10161f",secondary].reduce((best,c)=> worst(c) > worst(best) ? c : best, "#ffffff");
 }
 
 let _crestSeq = 0;
@@ -166,9 +176,11 @@ function clubCrestSVG(club, size=46){
   const secondary = club.secondary || "#ffffff";
   const id = "crest" + (++_crestSeq);
 
-  // the motif sits on whichever colour covers the middle of the badge
+  // the hole colour punches back to whatever covers the middle of the badge
   const centreField = (pattern==="stripes" || pattern==="sash") ? secondary : primary;
-  const ink = _crestInk(centreField, secondary===centreField ? primary : secondary);
+  // a club can name its motif colour outright when the automatic pick isn't
+  // the one its identity calls for
+  const ink = spec.ink || _crestInk(_crestFields(pattern, primary, secondary), secondary===centreField ? primary : secondary);
   const rim = _crestContrast(primary, "#ffffff") > 1.7 ? "rgba(255,255,255,.85)" : "rgba(16,22,31,.85)";
 
   const outline = shape==="round"

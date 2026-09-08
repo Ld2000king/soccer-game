@@ -326,6 +326,29 @@ body{
 .league-picker{gap:8px;}
 .league-chip{padding:8px 14px; font-size:13px;}
 
+/* the club you are at now, so the offers read as a choice to leave it */
+.transfer-current{
+  display:flex; align-items:center; gap:10px; margin:0 0 14px;
+  padding:8px 12px; border-radius:var(--px-r,14px);
+  background:var(--px-bg-2); border:1px solid var(--px-line);
+}
+.transfer-current .club-crest{margin:0;}
+.transfer-current-label{font-size:10px; font-weight:700; color:var(--px-text-dim,#9fb6cc);}
+.transfer-current-name{font-size:14px; font-weight:800; color:#fff;}
+
+/* the negotiation shown as an actual move between two badges */
+.transfer-move{
+  display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:14px;
+}
+.transfer-move-side{display:flex; flex-direction:column; align-items:center; gap:6px;}
+.transfer-move-side .club-crest{margin:0;}
+.transfer-move-from{opacity:.62;}
+.transfer-move-label{font-size:11px; font-weight:700; color:var(--px-text-dim,#9fb6cc); max-width:96px; text-align:center;}
+.transfer-move-arrow{
+  font-size:30px; font-weight:900; color:var(--px-lime,#c2ff40); line-height:1;
+  text-shadow:var(--px-glow-lime,0 0 14px rgba(194,255,64,.5));
+}
+
 @media (prefers-reduced-motion:reduce){
   .transfer-reveal-text, .flip-card-mark{animation:none;}
   .flip-card-inner{transition:none;}

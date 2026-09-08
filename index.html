@@ -401,6 +401,13 @@
   <section id="screen-transfer" class="screen">
     <div class="panel px-reveal-panel">
       <h2 id="transfer-title">חלון העברות</h2>
+      <div class="transfer-current">
+        <div id="transfer-current-crest" class="club-crest"></div>
+        <div class="transfer-current-text">
+          <div class="transfer-current-label">המועדון שלך כעת</div>
+          <div id="transfer-current-name" class="transfer-current-name">—</div>
+        </div>
+      </div>
       <p id="transfer-desc" class="training-desc"></p>
       <div id="transfer-reveal" class="transfer-reveal">
         <p class="transfer-reveal-text">נמצאו מועמדים! פותחים את הקלפים</p>
@@ -414,7 +421,19 @@
   <!-- ===== התמקחות על חוזה ===== -->
   <section id="screen-negotiate" class="screen">
     <div class="panel negotiate-panel">
-      <div id="negotiate-crest" class="club-crest negotiate-crest">?</div>
+      <!-- the move shown as a move: the badge you are leaving, the badge you
+           would be joining, and an arrow pointing the way reading travels -->
+      <div class="transfer-move">
+        <div class="transfer-move-side">
+          <div id="negotiate-crest" class="club-crest negotiate-crest">?</div>
+          <div id="negotiate-crest-label" class="transfer-move-label">אליו</div>
+        </div>
+        <div class="transfer-move-arrow" aria-hidden="true">‹</div>
+        <div class="transfer-move-side transfer-move-from">
+          <div id="negotiate-from-crest" class="club-crest"></div>
+          <div id="negotiate-from-label" class="transfer-move-label">המועדון שלך</div>
+        </div>
+      </div>
       <h2 id="negotiate-club-name">מועדון</h2>
       <p id="negotiate-club-rating" class="training-desc"></p>
 
