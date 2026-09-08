@@ -25,7 +25,7 @@ const CLUBS = [
   { id:"bsak", league:"il", name:"Bnei Sakhnin",city:"Sakhnin",    primary:"#d21f3c", secondary:"#ffffff", rating:60, crest:{s:"round",p:"hoops",m:"ball"} },
   { id:"ashd", league:"il", name:"FC Ashdod",   city:"Ashdod",     primary:"#ffd400", secondary:"#d21f3c", rating:58, crest:{s:"shield",p:"stripes",m:"ship"} },
   { id:"hphaifa",league:"il",name:"Hapo'el Haifa",city:"Haifa",    primary:"#d21f3c", secondary:"#111111", rating:56, crest:{s:"shield",p:"half",m:"wolf"} },
-  { id:"ntny", league:"il", name:"Netanya SC",  city:"Netanya",    primary:"#ffd400", secondary:"#0033a0", rating:54, crest:{s:"round",p:"solid",m:"rose"} },
+  { id:"ntny", league:"il", name:"Netanya SC",  city:"Netanya",    primary:"#ffd400", secondary:"#0033a0", rating:54, crest:{s:"round",p:"solid",m:"rose", ink:"#111111"} },
   { id:"hpjr", league:"il", name:"Hapo'el Jer", city:"Jerusalem",  primary:"#d21f3c", secondary:"#111111", rating:52, crest:{s:"shield",p:"sash",m:"crown"} },
 
   // ---- צרפת ----
