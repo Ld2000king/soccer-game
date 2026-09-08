@@ -208,54 +208,11 @@ class AimShootout{
   }
 
   _drawKeeper(){
-    const ctx = this.ctx;
-    const x = this.keeper.x, y = this.keeper.y;
-    const diving = this.phase!=="idle";
-    const lean = diving ? (this.keeper.x - this.W/2) / (this.W/2) : 0; // -1..1
-
-    // shadow
-    ctx.beginPath();
-    ctx.ellipse(x, y+13, 9, 3, 0, 0, Math.PI*2);
-    ctx.fillStyle = "rgba(0,0,0,.35)";
-    ctx.fill();
-
-    // legs
-    ctx.strokeStyle = "#1c1c1c"; ctx.lineWidth = 3; ctx.lineCap = "round";
-    ctx.beginPath(); ctx.moveTo(x-2.5, y+2); ctx.lineTo(x-2.5-lean*4, y+12); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x+2.5, y+2); ctx.lineTo(x+2.5-lean*4, y+12); ctx.stroke();
-
-    // shorts
-    ctx.fillStyle = this.keeperKit.shorts;
-    ctx.fillRect(x-4.5, y, 9, 4);
-
-    // torso / keeper jersey in the club's colours
-    ctx.beginPath();
-    ctx.ellipse(x, y-4, 7, 8, lean*0.3, 0, Math.PI*2);
-    ctx.fillStyle = this.keeperKit.shirt;
-    ctx.fill();
-    ctx.strokeStyle = "rgba(4,12,8,.75)"; ctx.lineWidth = 2.2; ctx.stroke();
-    ctx.strokeStyle = this.keeperKit.shorts; ctx.lineWidth = 1.2; ctx.stroke();
-
-    // arms — spread wide when diving, relaxed when idle
-    const armSpread = diving ? 13 : 6;
-    const armLift = diving ? -4 : -6;
-    ctx.strokeStyle = this.keeperKit.shirt; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(x-4, y-9); ctx.lineTo(x-armSpread, y+armLift); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x+4, y-9); ctx.lineTo(x+armSpread, y+armLift); ctx.stroke();
-    // gloves
-    ctx.fillStyle = "#fff";
-    ctx.beginPath(); ctx.arc(x-armSpread, y+armLift, 2.6, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(x+armSpread, y+armLift, 2.6, 0, Math.PI*2); ctx.fill();
-
-    // head + hair
-    ctx.beginPath();
-    ctx.arc(x, y-13.5, 3.4, 0, Math.PI*2);
-    ctx.fillStyle = "#e3ac82";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(0,0,0,.25)"; ctx.lineWidth = 0.8; ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(x, y-14.7, 3.4, Math.PI, Math.PI*2);
-    ctx.fillStyle = "#2b1a10";
-    ctx.fill();
+    const lean = this.phase!=="idle" ? (this.keeper.x - this.W/2) / (this.W/2) : 0; // -1..1
+    drawFootballer(this.ctx, {
+      x: this.keeper.x, y: this.keeper.y, s: 1,
+      shirt: this.keeperKit.shirt, trim: this.keeperKit.shorts,
+      pose: "keeper", lean,
+    });
   }
 }

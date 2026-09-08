@@ -164,43 +164,17 @@ class DribbleChallenge{
     ctx.strokeStyle = "#222"; ctx.lineWidth = 1; ctx.stroke();
   }
 
-  _drawFigure(x, y, color, secondary, s, hero){
+  _drawFigure(x, y, shirt, trim, s, hero){
     const ctx = this.ctx;
-    const cycle = this.time*5 + (hero?0:1.6);
-    const legSwing = Math.sin(cycle)*3*s;
-    ctx.beginPath();
-    ctx.ellipse(x, y+15*s, 9*s, 3*s, 0,0,Math.PI*2);
-    ctx.fillStyle = "rgba(0,0,0,.35)"; ctx.fill();
-
-    ctx.strokeStyle = "#1c1c1c"; ctx.lineWidth = 3*s; ctx.lineCap = "round";
-    ctx.beginPath(); ctx.moveTo(x-2.5*s,y+3*s); ctx.lineTo(x-2.5*s+legSwing*0.4,y+13*s); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x+2.5*s,y+3*s); ctx.lineTo(x+2.5*s-legSwing*0.4,y+13*s); ctx.stroke();
-
-    ctx.fillStyle = secondary;
-    ctx.fillRect(x-4.5*s, y+1.5*s, 9*s, 4*s);
-
-    ctx.beginPath();
-    ctx.ellipse(x, y-3*s, 7*s, 8*s, 0,0,Math.PI*2);
-    ctx.fillStyle = color; ctx.fill();
-    // dark rim first so a green kit still separates from the green pitch,
-    // then the club's second colour on top
-    ctx.lineWidth = 2.6; ctx.strokeStyle = "rgba(4,12,8,.7)"; ctx.stroke();
-    ctx.lineWidth = 1.4; ctx.strokeStyle = secondary; ctx.stroke();
+    const swing = Math.sin(this.time*5 + (hero?0:1.6)) * 3.2 * s;
+    drawFootballer(ctx, { x, y, s, shirt, trim, pose:"run", swing });
 
     if(hero){
-      // the "this one is you" ring used to be gold, which vanished on a yellow
-      // shirt now that kits follow the clubs
+      // the "this one is you" ring used to be gold, which vanished on a
+      // yellow shirt now that kits follow the clubs
       ctx.beginPath();
-      ctx.arc(x, y-2*s, 20*s, 0, Math.PI*2);
-      ctx.strokeStyle = heroRingColor(color); ctx.lineWidth = 2.4; ctx.stroke();
+      ctx.arc(x, y-2*s, 21*s, 0, Math.PI*2);
+      ctx.strokeStyle = heroRingColor(shirt); ctx.lineWidth = 2.4; ctx.stroke();
     }
-
-    ctx.beginPath();
-    ctx.arc(x, y-14*s, 4*s, 0, Math.PI*2);
-    ctx.fillStyle = "#e3ac82"; ctx.fill();
-    ctx.strokeStyle = "rgba(0,0,0,.25)"; ctx.lineWidth = 0.8; ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(x, y-15.5*s, 4*s, Math.PI, Math.PI*2);
-    ctx.fillStyle = "#2b1a10"; ctx.fill();
   }
 }

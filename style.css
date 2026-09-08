@@ -591,15 +591,45 @@ body{
 
 /* ===== Match ===== */
 #screen-match{background:#04150c;}
+/* One-line scoreboard. Everything here exists to stop the row breaking:
+   the sides share the leftover width and truncate, the score and the clock
+   never shrink, and nothing is allowed to wrap onto a second line. */
 .match-header{
-  display:flex; justify-content:space-between; align-items:center; padding:14px 24px;
+  flex-shrink:0;
+  display:flex; align-items:center; gap:10px; padding:10px 14px;
   background:linear-gradient(180deg,#0c2318,#04150c);
 }
-.score-box{display:flex; gap:14px; align-items:center; font-weight:800; font-size:18px;}
-#match-score{background:#0e1526; padding:6px 16px; border-radius:8px; letter-spacing:1px; display:inline-block;}
+.score-box{
+  flex:1; min-width:0;
+  display:flex; align-items:center; gap:8px;
+  font-weight:800; font-size:15px; white-space:nowrap;
+}
+.score-side{
+  flex:1; min-width:0;
+  display:flex; align-items:center; gap:6px;
+}
+.score-side:last-of-type{justify-content:flex-end;}
+.score-side .match-crest{flex-shrink:0;}
+#match-home-name, #match-away-name{
+  min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+#match-score{
+  flex-shrink:0; white-space:nowrap;
+  background:#0e1526; padding:6px 12px; border-radius:8px; letter-spacing:1px;
+}
 #match-score.bump{animation:scoreBump .5s cubic-bezier(.3,1.7,.4,1);}
 @keyframes scoreBump{0%{transform:scale(1);} 40%{transform:scale(1.35); color:var(--accent);} 100%{transform:scale(1);}}
-.match-clock{font-weight:800; color:var(--accent); font-size:18px;}
+.match-clock{
+  flex-shrink:0; white-space:nowrap;
+  font-weight:800; color:var(--accent); font-size:14px;
+  background:rgba(255,210,63,.12); border:1px solid rgba(255,210,63,.3);
+  border-radius:999px; padding:4px 9px;
+}
+@media(max-width:380px){
+  .score-box{font-size:13px; gap:6px;}
+  #match-score{padding:5px 9px;}
+  .match-crest .crest-svg{width:24px; height:28px;}
+}
 
 .match-log{
   flex:1; min-height:0; max-width:640px; width:100%; margin:0 auto; padding:14px 16px;
