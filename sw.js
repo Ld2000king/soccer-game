@@ -1,4 +1,4 @@
-const CACHE_NAME = "star-striker-v11";
+const CACHE_NAME = "star-striker-v12";
 const ASSETS = [
   "./",
   "./index.html",
@@ -14,8 +14,10 @@ const ASSETS = [
   "./js/match.js",
   "./js/ui.js",
   "./js/main.js",
+  "./icons/icon-180.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
+  "./icons/icon-maskable-512.png",
 ];
 
 self.addEventListener("install", (event)=>{
