@@ -18,10 +18,12 @@ function ratingGoalExpectation(a, b){
 const MatchController = {
   weightsForPosition(pos){
     switch(pos){
-      case "FWD": return {shoot:.40, pass:.20, dribble:.25, defend:.15, save:0};
-      case "MID": return {shoot:.20, pass:.30, dribble:.20, defend:.30, save:0};
-      case "DEF": return {shoot:.05, pass:.20, dribble:.10, defend:.65, save:0};
-      case "GK":  return {shoot:0, pass:.20, dribble:0, defend:0, save:.80};
+      // penalties and free kicks are yours to take up front and in midfield, and to face in goal;
+      // a corner is taken by attackers and midfielders and defended by defenders and the keeper
+      case "FWD": return {shoot:.30, pass:.15, dribble:.20, defend:.07, save:0, corner:.06, freekick:.10, penalty:.12};
+      case "MID": return {shoot:.15, pass:.25, dribble:.15, defend:.20, save:0, corner:.10, freekick:.10, penalty:.05};
+      case "DEF": return {shoot:.05, pass:.18, dribble:.12, defend:.48, save:0, corner:.17, freekick:0, penalty:0};
+      case "GK":  return {shoot:0, pass:.15, dribble:0, defend:0, save:.50, corner:.13, freekick:.10, penalty:.12};
     }
   },
 
@@ -175,18 +177,23 @@ const MatchController = {
 
   _resolveKeyMoment(ev){
     const ctx = this.ctx, p = ctx.p;
+    const keeper = p.position==="GK", taker = p.position==="FWD" || p.position==="MID";
     const titles = {
       shoot:"הזדמנות סיום! בחר לאן לבעוט",
       pass:"מסירה חדה לרשת! תזמן את המסירה",
       dribble:"מגן מולך! החלק כדי לעבור אותו",
       defend:"התקפה מסוכנת עלייך להתערב!",
       save:"בעיטה לעברך! בחר לאן לצלול",
+      penalty: keeper ? "פנדל נגדך! בחר לאן לצלול" : "פנדל! בחר לאן לבעוט",
+      freekick: keeper ? "בעיטה חופשית נגדך! בחר לאן לצלול" : "בעיטה חופשית! בחר לאן לבעוט",
+      corner: taker ? "קרן! בחר לאן לשלוח את הכדור" : "קרן נגדך! תזמן את הניקוי",
     };
     this._logEvent(`🔥 ${ctx.minute}' — הכדור אצלך! ${titles[ev.type]}`, {key:true});
     $("#minigame-title").textContent = `${ctx.minute}' — ${titles[ev.type]}`;
     $("#timing-mode").classList.add("hidden");
     $("#aim-mode").classList.add("hidden");
     $("#dribble-mode").classList.add("hidden");
+    $("#corner-mode").classList.add("hidden");
 
     // both sides wear their own club's colours, with the opponent changing
     // strip if the two shirts are too close to tell apart
@@ -204,21 +211,36 @@ const MatchController = {
     SituationView.caption(null);
     $("#minigame-overlay").classList.remove("hidden");
 
-    if(ev.type==="shoot" || ev.type==="save"){
+    // shots at goal: a plain shot, a penalty or a free kick — you shoot, or you are the keeper
+    const inGoal = p.position==="GK";
+    const aimMode = { shoot:"shoot", save:"save", penalty:inGoal?"save":"shoot", freekick:inGoal?"save":"shoot" }[ev.type];
+    if(aimMode){
       $("#aim-mode").classList.remove("hidden");
 
       const heroSkill = Career.overall() + p.reputation/4;
       const oppClub = ctx.myIsHome ? ctx.awayClub : ctx.homeClub;
-      const mode = ev.type==="shoot" ? "shoot" : "save";
+      const mode = aimMode;
       const attackerSkill = mode==="shoot" ? heroSkill : oppClub.rating;
       const keeperSkill = mode==="shoot" ? oppClub.rating : heroSkill;
       // shooting means you face their keeper; saving means the keeper is you.
       // Same keeper strip as on the pitch behind the panel.
       const keeperKit = mode==="shoot" ? keeperKitFor(kits.theirs, kits.mine) : keeperKitFor(kits.mine, kits.theirs);
 
-      const aim = new AimShootout($("#aim-canvas"), $("#aim-hint"), mode, {attackerSkill, keeperSkill, keeperKit, keeperLook: mode==="save" ? Career.playerLook() : null});
+      // the free kick's wall is the defending side's: theirs when you shoot, yours when you keep
+      const wall = ev.type==="freekick", wallKit = mode==="shoot" ? kits.theirs : kits.mine;
+      const aim = new AimShootout($("#aim-canvas"), $("#aim-hint"), mode, {attackerSkill, keeperSkill, keeperKit, keeperLook: mode==="save" ? Career.playerLook() : null, wall, wallKit});
       aim.start((score, detail)=>{
         aim.stop();
+        this._finishKeyMoment(ev.type, score, detail);
+      });
+    } else if(ev.type==="corner" && SituationView.sit && SituationView.sit.cornerAttack){
+      $("#corner-mode").classList.remove("hidden");
+
+      const heroSkill = Career.overall() + p.reputation/4;
+      const oppClub = ctx.myIsHome ? ctx.awayClub : ctx.homeClub;
+      const corner = new CornerPick($("#corner-canvas"), $("#corner-hint"), {atkSkill:heroSkill, defSkill:oppClub.rating, sit:SituationView.sit});
+      corner.start((score, detail)=>{
+        corner.stop();
         this._finishKeyMoment(ev.type, score, detail);
       });
     } else if(ev.type==="dribble"){
@@ -237,7 +259,7 @@ const MatchController = {
 
       const bar = new TimingBar($("#match-timing-track"), $("#match-timing-zone"), $("#match-timing-marker"));
       const chemistry = Career.rel("team");
-      const zoneWidth = ev.type==="defend" ? 30 : Math.max(10, Math.min(34, 20 + (chemistry-50)/5));
+      const zoneWidth = (ev.type==="defend" || ev.type==="corner") ? 30 : Math.max(10, Math.min(34, 20 + (chemistry-50)/5));
       bar.setZone(zoneWidth, 30+Math.random()*40);
       bar.speed = 1.6 + Career.overall()/100;
       bar.start();
@@ -260,10 +282,10 @@ const MatchController = {
     SituationView.liftForPanel(null);
     await SituationView.playOutcome(type, score > 0.5, detail);
     SituationView.hide();
-    this._applyKeyResult(type, score);
+    this._applyKeyResult(type, score, detail);
   },
 
-  _applyKeyResult(type, score){
+  _applyKeyResult(type, score, detail){
     const ctx = this.ctx, p = ctx.p;
     const success = score > 0.5;
     ctx.perf.total++;
@@ -279,6 +301,47 @@ const MatchController = {
         p.reputation += 1;
       } else {
         this._logEvent(`${ctx.minute}' — ${p.name} בעט אך ההזדמנות התבזבזה.`);
+      }
+    } else if(type==="penalty" || type==="freekick"){
+      const label = type==="penalty" ? "פנדל" : "בעיטה חופשית";
+      if(p.position==="GK"){
+        if(success){
+          this._logEvent(type==="freekick" && detail && detail.blocked
+            ? `🧱 ${ctx.minute}' — החומה חוסמת את הבעיטה החופשית, ${p.name} נשאר עם שער נקי.`
+            : `🧤 ${ctx.minute}' — ${p.name} מציל ${type==="penalty" ? "פנדל" : "בעיטה חופשית"}! מדהים!`);
+        } else {
+          this._logEvent(`${ctx.minute}' — ${type==="penalty" ? "הפנדל" : "הבעיטה החופשית"} נכנס, ${p.name} לא יכול היה לעשות כלום.`, {goal:true});
+          this._goalScored(oppSide, false);
+        }
+      } else if(success){
+        p.goals++; ctx.perf.goals++;
+        this._logEvent(`🌟 ${ctx.minute}' — ${p.name} כובש מ${label}! ${type==="penalty" ? "קר רוח מהנקודה!" : "מהלך מרהיב מעל החומה!"}`, {goal:true});
+        this._goalScored(heroSide, false);
+        p.reputation += 1;
+      } else {
+        this._logEvent(type==="freekick" && detail && detail.blocked
+          ? `${ctx.minute}' — ${label} של ${p.name} נבלמת בחומה.`
+          : `${ctx.minute}' — ${label} של ${p.name} נעצרת בידי השוער.`);
+      }
+    } else if(type==="corner"){
+      const takes = p.position==="FWD" || p.position==="MID";
+      if(takes){
+        if(success){
+          p.assists++; ctx.perf.assists++;
+          this._logEvent(`🎯 ${ctx.minute}' — קרן מושלמת של ${p.name}, נגיחה ושער!`, {goal:true});
+          this._goalScored(heroSide, false);
+          p.reputation += 1;
+        } else {
+          const why = { cleared:"ההגנה מנקה", saved:"השוער עוצר את הנגיחה", wide:"הנגיחה יוצאת החוצה" }[detail && detail.result] || "ההגנה מנקה";
+          this._logEvent(`${ctx.minute}' — הקרן של ${p.name} לא מסתיימת בשער: ${why}.`);
+        }
+      } else if(success){
+        this._logEvent(p.position==="GK"
+          ? `🧤 ${ctx.minute}' — ${p.name} יוצא ותופס את הקרן בביטחון.`
+          : `🛡️ ${ctx.minute}' — ${p.name} מנקה את הקרן מהרחבה.`);
+      } else {
+        this._logEvent(`${ctx.minute}' — גול מקרן, ${p.name} לא הצליח למנוע את הנגיחה.`, {goal:true});
+        this._goalScored(oppSide, false);
       }
     } else if(type==="pass"){
       if(success){

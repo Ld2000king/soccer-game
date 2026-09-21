@@ -726,7 +726,7 @@ body{
   font-family:Oswald, Rubik, sans-serif; font-weight:900; font-size:18px; font-style:italic;
   color:#fff; text-shadow:0 2px 0 #000, 0 0 1px #000; margin:0 0 10px; letter-spacing:.2px;
 }
-.on-pitch #aim-canvas, .on-pitch #dribble-canvas{border:2px solid #0b0d10; border-radius:14px; box-shadow:0 0 0 2px rgba(255,255,255,.15);}
+.on-pitch #aim-canvas, .on-pitch #dribble-canvas, .on-pitch #corner-canvas{border:2px solid #0b0d10; border-radius:14px; box-shadow:0 0 0 2px rgba(255,255,255,.15);}
 .on-pitch .aim-hint{color:#dfe7d6; margin-top:10px; font-size:13px;}
 .on-pitch .timing-wrap{margin-bottom:14px;}
 .on-pitch .timing-track{background:#0b0d10; border-color:#444a52;}
@@ -740,7 +740,7 @@ body{
 .on-pitch .btn-primary:active{transform:translateY(3px); box-shadow:inset 0 2px 0 rgba(255,255,255,.55), 0 1px 0 #1c3d05;}
 
 /* ===== Aim minigame ===== */
-#aim-canvas{
+#aim-canvas, #corner-canvas{
   display:block; width:100%; max-width:320px; height:auto; margin:0 auto;
   border-radius:12px; border:1px solid #2a3552; touch-action:none; cursor:pointer;
 }

@@ -225,4 +225,15 @@ The user's player is customisable: hair style, hair colour, skin tone and boot c
   - The pitch camera and the aim canvas both look at the goal from behind the ball, so a zone's column is its screen side.
   - Never pick a random side in an outcome when a choice exists.
   - Don't pre-place an aim target on the pitch; it reads as a hint for a fixed side. The target ring appears on the chosen spot.
+- **Moment types and who gets them** (`MatchController.weightsForPosition`):
+  - `shoot`, `pass`, `dribble`, `defend`, `save`.
+  - `penalty`: you shoot it as FWD or MID, and face it as GK. It is the aim minigame with the penalty layout, and the taker runs up before the strike.
+  - `freekick`: aim minigame with a wall of four, and it is the same for FWD, MID and GK. The wall's low centre is always blocked. The low corners can hit the wall or bend round it. The top row goes over it. The replay shows the ball curling round or clearing the wall, or stopping on it (`detail.blocked`).
+  - `corner`: FWD and MID take it with the `CornerPick` minigame in `js/corner.js`. The player picks near post, penalty spot or far post. The defence covers one zone, and an uncovered delivery still has to be headed in. DEF and GK defend it with the timing bar.
+- **Corner geometry:**
+  - The pitch view and the panel draw the same box, the same players and the same side (`sit.cornerSide`, `sit.cornerTargets`). Near post is on the taker's side.
+  - The camera needs both posts and the taker in frame (zoom about 9). Put the camera far enough down the pitch that the stands fill the space behind the goal.
+- **Layout gotchas:**
+  - Keep the taker at least 2 m from the ball and off to one side. A taker standing directly behind the ball hides it.
+  - `add(..., {exact:true})` skips the random jitter. Use it for walls and for anyone placed relative to the ball.
 - New moment types go in `buildSituation` and `playOutcome`. Keep the moment readable above the panel; `liftForPanel` frames the ball and goal between the scoreboard and the top of the panel.

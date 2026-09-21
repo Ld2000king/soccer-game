@@ -24,13 +24,17 @@ function zoneCenter(zone, W, H){
 
 class AimShootout{
   // mode: "shoot" (user aims at goal, AI keeper reacts) or "save" (user is keeper choosing dive, AI striker shoots)
-  constructor(canvas, hint, mode, {attackerSkill, keeperSkill, keeperKit, keeperLook}){
+  constructor(canvas, hint, mode, {attackerSkill, keeperSkill, keeperKit, keeperLook, wall, wallKit}){
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     this.hint = hint;
     this.mode = mode;
     this.attackerSkill = attackerSkill;
     this.keeperSkill = keeperSkill;
+    // a free kick has a wall of four in front of the goal: the middle is shut, the
+    // lower corners can bend round it or hit it, and over the top is open
+    this.wall = !!wall;
+    this.wallKit = wallKit || { shirt:"#d21f3c", shorts:"#ffffff" };
     // the keeper belongs to a real club: yours when you are diving, the
     // opponent's when you are shooting at them
     this.keeperLook = keeperLook || { skin:"#e3a97f", hair:"#1e1611" };  // yours when you are the keeper
@@ -89,24 +93,36 @@ class AimShootout{
     const reach = diveZoneId===shotZoneId ? "onIt"
       : zonesAdjacent(shotZoneId, diveZoneId) ? "stretch"
       : "beaten";
-    const saved = reach==="onIt" ? true
+    let saved = reach==="onIt" ? true
       : reach==="beaten" ? false
       : Math.random() < this._stretchSaveChance(shotZoneId);
+
+    const blocked = this.wall && Math.random() < this._wallBlockChance(shotZoneId);
+    if(blocked) saved = true;
 
     // a fingertip save has to look like one, so on a won stretch the keeper
     // follows the ball rather than landing a zone away from it
     const diveShown = (saved && reach==="stretch") ? shotZoneId : diveZoneId;
 
-    this._animate(shotZoneId, diveShown, ()=>{
+    this._animate(shotZoneId, diveShown, blocked, ()=>{
       // told after the play, not before — the hint used to spoil the result
-      this.hint.textContent = this.mode==="shoot"
+      this.hint.textContent = blocked
+        ? "החומה חסמה!"
+        : this.mode==="shoot"
         ? (saved ? "השוער קרא את הכיוון וחסם!" : "הרשת רועדת!")
         : (saved ? "הצלה מדהימה!" : "הכדור נכנס, אין מה לעשות.");
       const success = this.mode==="shoot" ? !saved : saved;
       // the pitch replays exactly this: where the ball went and where the keeper dived
-      const detail = { mode:this.mode, shotZone:shotZoneId, diveZone:diveShown };
+      const detail = { mode:this.mode, shotZone:shotZoneId, diveZone:diveShown, blocked };
       setTimeout(()=> this.onResolve(success ? 1 : 0, detail), 500);
     });
+  }
+
+  // the low centre is always a wall shot; the low corners only get past when the shot is good
+  _wallBlockChance(zoneId){
+    if(zoneId==="BC") return 1;
+    if(zoneId==="BL" || zoneId==="BR") return Math.max(0.15, Math.min(0.55, 0.4 - (this.attackerSkill-60)/250));
+    return 0;
   }
 
   // AI keeper picks a dive zone; better keeperSkill relative to attackerSkill = more likely correct read
@@ -142,8 +158,9 @@ class AimShootout{
     return Math.max(0.05, Math.min(0.9, zone.saveBase * skillFactor * 0.5));
   }
 
-  _animate(shotZoneId, diveZoneId, done){
+  _animate(shotZoneId, diveZoneId, blocked, done){
     const shotTarget = zoneCenter(zoneById(shotZoneId), this.W, this.H);
+    if(blocked) shotTarget.y = this._wallFeet() - 34;      // stops on the wall
     const diveTarget = zoneCenter(zoneById(diveZoneId), this.W, this.H);
     const ballStart = { x:this.ball.x, y:this.ball.y };
     const keeperStart = { x:this.keeper.x, y:this.keeper.y };
@@ -247,6 +264,7 @@ class AimShootout{
     ctx.beginPath(); ctx.moveTo(4,goalBottom); ctx.lineTo(4,4); ctx.lineTo(W-4,4); ctx.lineTo(W-4,goalBottom); ctx.stroke();
 
     this._drawKeeper(t);
+    if(this.wall) this._drawWall(t);
 
     // ball: shrinks a little as it travels away toward the goal
     const k = clamp01((this.H-14 - this.ball.y) / (this.H-14 - this.H*0.1));
@@ -254,6 +272,16 @@ class AimShootout{
     ctx.fillStyle = "rgba(0,25,0,.35)";
     ctx.beginPath(); ctx.ellipse(this.ball.x + 4, Math.min(H-4, this.ball.y + r + 2 + k*18), r*1.1, r*0.45, 0, 0, Math.PI*2); ctx.fill();
     SoccerKit.drawBallIcon(ctx, this.ball.x, this.ball.y, r, this.phase==="animating" ? t*14 : 0);
+  }
+
+  _wallFeet(){ return this.H*0.74; }
+  _drawWall(t){
+    // four defenders shoulder to shoulder between the ball and the goal
+    [-1.5, -0.5, 0.5, 1.5].forEach((k, i)=>{
+      SoccerKit.drawFigure(this.ctx, this.W/2 + k*27, this._wallFeet(), 58, this.wallKit,
+        { skin:["#e3a97f", "#c0864f", "#f2caa4", "#8a5530"][i], hair:"#1e1611", style:["short", "buzz", "short", "curly"][i] },
+        { pose:"idle", seed:i*1.7 }, t);
+    });
   }
 
   _drawKeeper(t){

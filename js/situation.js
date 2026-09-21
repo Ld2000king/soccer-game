@@ -22,7 +22,16 @@ const SITUATION_TITLES = {
   dribble:"אחד על אחד!",
   defend:"התקפה מסוכנת!",
   save:"בעיטה לשער!",
+  penalty:"פנדל!",
+  freekick:"בעיטה חופשית!",
 };
+
+// the caption over the opening frame; a corner reads differently for each side
+function situationTitle(sit){
+  if(sit.type==="corner") return sit.cornerAttack ? "קרן!" : "קרן נגדך!";
+  if(sit.type==="penalty" && sit.hero.role==="gk") return "פנדל נגדך!";
+  return SITUATION_TITLES[sit.type];
+}
 
 function _jit(v, r){ return v + (Math.random()*2-1)*r; }
 
@@ -52,7 +61,12 @@ function buildSituation(type, m, kits){
   };
   sit.home.gkKit = keeperKitFor(sit.home.kit, sit.away.kit);
   sit.away.gkKit = keeperKitFor(sit.away.kit, sit.home.kit);
-  const add = (team, x, y, o={})=>{ const pl = { team, x: _jit(X(x), 0.8), y: _jit(y, 0.8), ...o }; sit.players.push(pl); return pl; };
+  // exact:true keeps a player where he was put — the wall, the taker over the ball
+  const add = (team, x, y, o={})=>{
+    const exact = o.exact; delete o.exact;
+    const pl = { team, x: exact ? X(x) : _jit(X(x), 0.8), y: exact ? y : _jit(y, 0.8), ...o };
+    sit.players.push(pl); return pl;
+  };
 
   if(type==="shoot"){
     // one-on-one: only the keeper between you and the goal, a defender chasing
@@ -118,6 +132,79 @@ function buildSituation(type, m, kits){
     sit.ball = { x: sit.attacker.x - 0.4, y: sit.attacker.y - 0.9, z: 0 };
     sit.markers.push({ type:"danger", at:[sit.ball.x, sit.ball.y] });
     sit.markers.push({ type:"run", from:[sit.hero.x, sit.hero.y], to:[sit.ball.x - 0.8, sit.ball.y + 0.6] });
+  } else if(type==="penalty"){
+    // the ball on the spot, the keeper on his line, everyone else outside the box and the D
+    sit.camera = { x: 34, y: 12, zoom: 17 };
+    if(!isGK){
+      sit.hero = add(me, 34, 17.2, { pose:"idle", marker:true, exact:true });
+      sit.keeper = add(them, 34, 1.6, { role:"gk", pose:"keeper", exact:true });
+    } else {
+      sit.hero = add(me, 34, 1.4, { role:"gk", pose:"keeper", marker:true, exact:true });
+      sit.attacker = add(them, 34, 16.6, { pose:"idle", exact:true });
+    }
+    add(me, 22, 21.5, { pose:"idle" });
+    add(them, 27.5, 22.4, { pose:"idle" });
+    add(them, 41, 21.8, { pose:"idle" });
+    add(me, 46.5, 22.6, { pose:"idle" });
+    sit.ball = { x: X(34), y: 11, z: 0 };
+    sit.markers.push({ type: isGK ? "danger" : "control", at:[sit.ball.x, sit.ball.y] });
+  } else if(type==="freekick"){
+    // the ball about 23 m out, a wall of four 9.15 m from it on the line to the goal
+    const e = (Math.random()<0.5 ? -1 : 1) * (3.5 + Math.random()*3);
+    const bx = 34 + e, by = 23;
+    const len = Math.hypot(34 - bx, by), ux = (34 - bx)/len, uy = -by/len;   // unit vector ball → goal
+    const wx = bx + ux*9.15, wy = by + uy*9.15, qx = -uy, qy = ux;           // wall centre, and along the wall
+    const wallTeam = isGK ? me : them;
+    sit.wall = [-1.5, -0.5, 0.5, 1.5].map(k=> add(wallTeam, wx + qx*k*1.35, wy + qy*k*1.35, { pose:"idle", exact:true }));
+    sit.wallCx = X(wx); sit.wallY = wy;
+    const nearPost = e < 0 ? -1 : 1;
+    if(!isGK){
+      sit.hero = add(me, bx - ux*2.3 + qx*1.0, by - uy*2.3 + qy*1.0, { pose:"idle", marker:true, exact:true });
+      sit.keeper = add(them, 34 + nearPost*1.3, 1.6, { role:"gk", pose:"keeper", exact:true });
+      add(me, 40, 12, { pose:"jog" });
+      add(me, 28, 10, { pose:"jog" });
+      add(them, 33, 9.5, { pose:"idle" });
+      add(them, 38.5, 13.5, { pose:"idle" });
+    } else {
+      sit.hero = add(me, 34 + nearPost*1.3, 1.5, { role:"gk", pose:"keeper", marker:true, exact:true });
+      sit.attacker = add(them, bx - ux*2.3 + qx*1.0, by - uy*2.3 + qy*1.0, { pose:"idle", exact:true });
+      add(me, 31, 8, { pose:"idle" });
+      add(them, 40, 12, { pose:"jog" });
+      add(them, 27, 11, { pose:"jog" });
+    }
+    sit.camera = { x: 34, y: 15, zoom: 13 };
+    sit.ball = { x: X(bx), y: by, z: 0 };
+    sit.ux = flip ? -ux : ux;    // the run to the goal, as it looks on the (possibly mirrored) pitch
+    sit.markers.push({ type: isGK ? "danger" : "control", at:[sit.ball.x, sit.ball.y] });
+  } else if(type==="corner"){
+    // whoever is on the ball, the box is packed. Yours to take, or theirs to defend.
+    const attack = !isGK && m.p.position!=="DEF";
+    const s = flip ? -1 : 1;                                   // which corner: +1 is the taker's right
+    sit.cornerSide = s; sit.cornerAttack = attack;
+    sit.camera = { x: X(46.2), y: 20, zoom: 9.2 };
+    const cx = 65.5, cy = 1.4;
+    const mine  = [[29.5, 8.5], [37.5, 6.8], [33, 13], [43, 10.6]];
+    const theirs = [[32.3, 7.2], [36.3, 9.8], [40.3, 7.2], [29, 11.6], [33.6, 14.2]];
+    if(attack){
+      sit.hero = add(me, cx, cy, { pose:"idle", marker:true, exact:true });
+      sit.keeper = add(them, 34, 1.7, { role:"gk", pose:"keeper", exact:true });
+      mine.forEach(q=> add(me, q[0], q[1], { pose:"idle" }));
+      theirs.forEach(q=> add(them, q[0], q[1], { pose:"idle" }));
+    } else {
+      sit.taker = add(them, cx, cy, { pose:"idle", exact:true });
+      if(isGK){
+        sit.hero = add(me, 34, 2.5, { role:"gk", pose:"keeper", marker:true, exact:true });
+      } else {
+        sit.hero = add(me, 35.3, 8.3, { pose:"jog", marker:true });
+        sit.keeper = add(me, 34, 1.7, { role:"gk", pose:"keeper", exact:true });
+      }
+      [[30, 7.5], [38.8, 6.1], [32, 12.6], [41.6, 10]].forEach(q=> add(me, q[0], q[1], { pose:"idle" }));
+      [[31.7, 6.3], [36.2, 9.5], [40.2, 7.4], [29, 11], [34, 13.2]].forEach(q=> add(them, q[0], q[1], { pose:"idle" }));
+    }
+    sit.ball = { x: X(cx - 0.6), y: cy - 0.7, z: 0 };
+    sit.markers.push({ type: attack ? "control" : "danger", at:[sit.ball.x, sit.ball.y] });
+    // where a delivery can go, as the corner taker sees the box: near post, penalty spot, far post
+    sit.cornerTargets = { N:{ x:34 + s*4.6, y:4.4 }, M:{ x:34, y:10.2 }, F:{ x:34 - s*4.6, y:4.8 } };
   } else { // save
     // a striker shaping to shoot from the edge of the box; you are the keeper
     sit.camera = { x: 34, y: 13, zoom: 16 };
@@ -162,7 +249,7 @@ const SituationView = {
     this.follow = false;
     this._lift = null;
     this.el.classList.remove("hidden");
-    this.caption(SITUATION_TITLES[sit.type]);
+    this.caption(situationTitle(sit));
     this.t0 = performance.now();
     cancelAnimationFrame(this.raf);
     const loop = (now)=>{
@@ -274,20 +361,55 @@ const SituationView = {
     const zoneAt = (id)=>{ const z = zoneById(id); return { x: 34 + (z.col-1)*ZX, z: z.row===0 ? 1.8 : 0.45 }; };
     const leanFor = (x)=> Math.max(-0.9, Math.min(0.9, (x-34)/ZX*0.9));
 
+    // penalties and free kicks play out like a shot at goal, or a save when you are in it
+    const kind = type;
+    const gkRole = hero.role === "gk";
+    if(type==="penalty" || type==="freekick") type = gkRole ? "save" : "shoot";
+    const wall = kind==="freekick" ? sit.wall : null;
+    const wallHit = (x)=> {                               // where a low ball on the way to x meets the wall
+      const t = (b.y - sit.wallY)/b.y;
+      return { x: b.x + (x - b.x)*t, y: sit.wallY };
+    };
+    // the ball to a target, bending round the wall on the low side or over it on the high side
+    const flight = async (tgt, dur, arc)=>{
+      if(!wall || tgt.z >= 1.5) return this.tween(b, tgt, dur, { arc: wall ? Math.max(arc, 3.4) : arc });
+      const around = { x: sit.wallCx + (tgt.x < sit.wallCx ? -1 : 1)*3.4, y: sit.wallY - 0.4, z: 0.8 };
+      await this.tween(b, around, dur*0.55, { arc: 0.5 });
+      return this.tween(b, tgt, dur*0.6, { arc: 0.4 });
+    };
+    // a shot that meets the wall: it stops dead, drops back, the goal never sees it
+    const hitWall = async (x)=>{
+      const h = wallHit(x);
+      await this.tween(b, { x:h.x, y:h.y + 0.5, z:0.9 }, 460, { arc: 0.6 });
+      await this.tween(b, { x:h.x + (h.x < sit.wallCx ? -1.2 : 1.2), y:h.y + 3.4, z:0 }, 380, { arc: 1.2 });
+    };
+    const runUp = async ()=>{
+      const shooter = gkRole ? sit.attacker : hero;
+      if(kind==="penalty"){ shooter.pose = "run"; await this.tween(shooter, { y: b.y + 1.4 }, 520); }
+      else if(kind==="freekick"){ shooter.pose = "run"; await this.tween(shooter, { x: b.x - sit.ux*0.7, y: b.y + 0.9 }, 380); }
+    };
+
     if(type==="shoot"){
       const gx = side(sgn);
       const shot = detail ? zoneAt(detail.shotZone) : { x: gx, z: 0.7 };
       const dive = detail ? zoneAt(detail.diveZone) : { x: success ? 34 - sgn*1.8 : gx };
       sit.markers.push({ type:"target", at:[shot.x, 0.8], r:0.9 });   // the spot you picked
-      if(success){
+      await runUp();
+      hero.pose = "idle";
+      const kY = sit.keeper.y;
+      if(detail && detail.blocked){
         this.tween(sit.keeper, { x: dive.x, lean: leanFor(dive.x) }, 520);
-        await this.tween(b, inNet(shot.x, shot.z), 560, { arc: 1.4 });
+        await hitWall(shot.x);
+        this.caption("החומה חסמה!");
+      } else if(success){
+        this.tween(sit.keeper, { x: dive.x, lean: leanFor(dive.x) }, 520);
+        await flight(inNet(shot.x, shot.z), 560, 1.4);
         this._goal(sit.me);
         hero.pose = "celebrate"; hero.marker = false;
         this.caption("גול!!!");
       } else {
         this.tween(sit.keeper, { x: dive.x, lean: leanFor(dive.x) }, 480);
-        await this.tween(b, { x: shot.x, y: 3.3, z: shot.z }, 520, { arc: 0.9 });
+        await flight({ x: shot.x, y: kY - 0.3, z: shot.z }, 520, 0.9);
         this.caption("השוער עוצר!");
       }
     } else if(type==="pass"){
@@ -355,17 +477,87 @@ const SituationView = {
         a.pose = "celebrate";
         this.caption("גול ליריבה");
       }
+    } else if(type==="corner"){
+      const s = sit.cornerSide;
+      const near = (arr, x, y)=> arr.reduce((a, c)=> Math.hypot(c.x - x, c.y - y) < Math.hypot(a.x - x, a.y - y) ? c : a);
+      const mates = sit.players.filter(q=> q.team===sit.me && q.role!=="gk" && q!==hero);
+      const foes = sit.players.filter(q=> q.team===sit.them && q.role!=="gk" && q!==sit.taker);
+      const clearTo = { x: 34 - s*13, y: 22 };            // out to the far wing, away from the taker
+      if(sit.cornerAttack){
+        // your delivery goes where you sent it; what happens to it is what the minigame showed
+        const z = sit.cornerTargets[(detail && detail.zone) || "M"];
+        const result = detail ? detail.result : (success ? "goal" : "cleared");
+        hero.pose = "run";
+        await this.tween(b, { x:z.x, y:z.y, z:1.9 }, 900, { arc: 4.5 });
+        hero.pose = "idle"; hero.marker = false;
+        if(result==="goal"){
+          const h = near(mates, z.x, z.y);
+          this.tween(h, { x:z.x, y:z.y + 0.6 }, 250);
+          const gx = 34 + (Math.random()<0.5 ? -1 : 1)*(1.2 + Math.random()*1.5);
+          this.tween(sit.keeper, { x: 34 - (gx - 34), lean: leanFor(34 - (gx - 34)) }, 420);
+          await this.tween(b, inNet(gx, 0.9), 380, { arc: 0.4 });
+          this._goal(sit.me);
+          h.pose = "celebrate";
+          this.caption("גול מקרן!");
+        } else if(result==="saved"){
+          this.tween(sit.keeper, { x: b.x, lean: leanFor(b.x) }, 380);
+          await this.tween(b, { x: b.x, y: sit.keeper.y + 0.8, z: 0.9 }, 380);
+          this.caption("השוער עוצר!");
+        } else if(result==="wide"){
+          await this.tween(b, { x: 34 + (z.x >= 34 ? 1 : -1)*6.6, y: -1.4, z: 3.4 }, 460, { arc: 0.6 });
+          this.caption("הנגיחה יצאה החוצה");
+        } else {
+          const d = near(foes, z.x, z.y);
+          this.tween(d, { x:z.x, y:z.y + 0.5 }, 250);
+          await this.tween(b, { x:clearTo.x, y:clearTo.y, z:0 }, 800, { arc: 5 });
+          this.caption("ההגנה מנקה!");
+        }
+      } else {
+        // theirs: it lands on you (or in front of your keeper) and the timing decides
+        const land = gkRole ? { x: 34 + (Math.random()<0.5 ? -1 : 1)*0.8, y: 5.4 } : { x: hero.x, y: hero.y - 0.4 };
+        sit.taker.pose = "run";
+        await this.tween(b, { x:land.x, y:land.y, z:1.9 }, 900, { arc: 4.5 });
+        sit.taker.pose = "idle";
+        if(success){
+          hero.marker = false;
+          if(gkRole){
+            this.tween(hero, { y: hero.y + 1.2 }, 260);
+            await this.tween(b, { x:hero.x, y:hero.y + 1.0, z:1.2 }, 300);
+            this.caption("תפסת את הכדור!");
+          } else {
+            this.tween(hero, { x:land.x, y:land.y + 0.5 }, 200);
+            await this.tween(b, { x:clearTo.x, y:clearTo.y, z:0 }, 800, { arc: 5 });
+            this.caption("ניקית את הקרן!");
+          }
+        } else {
+          const a = near(foes, land.x, land.y);
+          this.tween(a, { x:land.x, y:land.y + 0.5 }, 250);
+          const gx = 34 + (Math.random()<0.5 ? -1 : 1)*(1.2 + Math.random()*1.5);
+          const keeper = gkRole ? hero : sit.keeper;
+          this.tween(keeper, { x: 34 - (gx - 34), lean: leanFor(34 - (gx - 34)) }, 420);
+          await this.tween(b, inNet(gx, 0.9), 380, { arc: 0.4 });
+          this._goal(sit.them);
+          a.pose = "celebrate";
+          this.caption("גול מקרן ליריבה");
+        }
+      }
     } else { // save
       const gx = side(sgn);
       const shot = detail ? zoneAt(detail.shotZone) : { x: gx, z: 0.7 };
       const dive = detail ? zoneAt(detail.diveZone) : { x: success ? gx : 34 - sgn*1.8 };
-      if(success){
+      await runUp();
+      if(sit.attacker) sit.attacker.pose = "idle";
+      if(detail && detail.blocked){
+        this.tween(hero, { x: dive.x, lean: leanFor(dive.x) }, 470);
+        await hitWall(shot.x);
+        this.caption("החומה חסמה!");
+      } else if(success){
         this.tween(hero, { x: dive.x, lean: leanFor(dive.x) }, 430);
-        await this.tween(b, { x: shot.x, y: 1.8, z: shot.z }, 460, { arc: 0.8 });
+        await flight({ x: shot.x, y: hero.y + 0.5, z: shot.z }, 460, 0.8);
         this.caption("הצלה!!");
       } else {
         this.tween(hero, { x: dive.x, lean: leanFor(dive.x) }, 470);
-        await this.tween(b, inNet(shot.x, shot.z), 500, { arc: 1 });
+        await flight(inNet(shot.x, shot.z), 500, 1);
         this._goal(sit.them);
         sit.attacker.pose = "celebrate";
         this.caption("גול ליריבה");
