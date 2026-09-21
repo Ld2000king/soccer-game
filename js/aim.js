@@ -24,7 +24,7 @@ function zoneCenter(zone, W, H){
 
 class AimShootout{
   // mode: "shoot" (user aims at goal, AI keeper reacts) or "save" (user is keeper choosing dive, AI striker shoots)
-  constructor(canvas, hint, mode, {attackerSkill, keeperSkill, keeperKit}){
+  constructor(canvas, hint, mode, {attackerSkill, keeperSkill, keeperKit, keeperLook}){
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     this.hint = hint;
@@ -33,6 +33,7 @@ class AimShootout{
     this.keeperSkill = keeperSkill;
     // the keeper belongs to a real club: yours when you are diving, the
     // opponent's when you are shooting at them
+    this.keeperLook = keeperLook || { skin:"#e3a97f", hair:"#1e1611" };  // yours when you are the keeper
     this.keeperKit = keeperKit || { shirt:"#ffd23f", shorts:"#111111" };
     this.W = canvas.width; this.H = canvas.height;
     this.locked = false;
@@ -258,6 +259,6 @@ class AimShootout{
     const figH = 92;
     // this.keeper tracks the keeper's body centre; the figure is drawn from the feet
     SoccerKit.drawFigure(this.ctx, this.keeper.x, Math.min(this._goalBottom() + 4, this.keeper.y + figH*0.5), figH,
-      this.keeperKit, { skin:"#e3a97f", hair:"#1e1611" }, { pose:"keeper", lean: lean*0.95, seed:1 }, t);
+      this.keeperKit, this.keeperLook, { pose:"keeper", lean: lean*0.95, seed:1 }, t);
   }
 }

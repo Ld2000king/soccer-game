@@ -15,10 +15,11 @@ function dribbleLanesAdjacent(a,b){
 }
 
 class DribbleChallenge{
-  constructor(canvas, hint, {attackerSkill, defenderSkill, kits}){
+  constructor(canvas, hint, {attackerSkill, defenderSkill, kits, heroLook}){
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     this.hint = hint;
+    this.heroLook = heroLook || { skin:"#e3a97f", hair:"#6a4424" };
     this.attackerSkill = attackerSkill;
     this.defenderSkill = defenderSkill;
     // both figures wear their real club's colours; the caller resolves any clash
@@ -188,7 +189,7 @@ class DribbleChallenge{
   _drawFigure(x, y, kit, h, hero){
     // (x, y) is the body centre the animation moves; the figure stands on its feet below it
     SoccerKit.drawFigure(this.ctx, x, y + 16, h, kit,
-      hero ? { skin:"#e3a97f", hair:"#6a4424" } : { skin:"#c0864f", hair:"#1e1611" },
+      hero ? this.heroLook : { skin:"#c0864f", hair:"#1e1611", style:"short" },
       { pose:"run", seed: hero ? 0 : 1.6, marker: hero ? heroRingColor(kit.shirt) : false }, this.time);
   }
 }

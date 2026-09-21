@@ -92,6 +92,9 @@
         <button class="chip" data-pos="GK">שוער</button>
       </div>
 
+      <label class="field-label">מראה</label>
+      <div id="create-look"></div>
+
       <label class="field-label">ליגה</label>
       <div id="league-picker" class="chip-row league-picker"></div>
 
@@ -107,7 +110,7 @@
     <header class="topbar">
       <div class="topbar-player">
         <div id="hud-crest" class="hud-crest" title="המועדון שלך"></div>
-        <div id="hud-avatar" class="avatar"></div>
+        <div id="hud-avatar" class="avatar" data-goto="screen-look" role="button" tabindex="0" title="ערוך מראה" aria-label="ערוך מראה"></div>
         <div>
           <div id="hud-name" class="hud-name">—</div>
           <div id="hud-club" class="hud-club">—</div>
@@ -213,6 +216,10 @@
         <span class="hub-icon">💫</span><span class="hub-name">כישורים</span>
         <span class="hub-sub">שדרג יכולות עם סטארבקס</span>
       </button>
+      <button class="hub-tile" data-goto="screen-look">
+        <span class="hub-icon">🎨</span><span class="hub-name">מראה</span>
+        <span class="hub-sub">שיער, עור, נעליים ואביזרים</span>
+      </button>
       <button class="hub-tile" data-goto="screen-shop">
         <span class="hub-icon">👟</span><span class="hub-name">חנות</span>
         <span class="hub-sub">נעליים ומשקאות אנרגיה</span>
@@ -249,6 +256,23 @@
     <div id="skills-list" class="skills-list"></div>
   </section>
 
+  <!-- ===== מראה ===== -->
+  <section id="screen-look" class="screen">
+    <header class="sub-header">
+      <button class="topbar-icon-btn back-btn" data-back title="חזרה" aria-label="חזרה">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <h2>מראה</h2>
+      <div class="sub-wallet"><span id="look-money">0</span>₪</div>
+    </header>
+    <div class="look-body">
+      <div id="look-editor"></div>
+      <div class="field-label">האביזרים שלי</div>
+      <div id="look-accessories" class="look-accessories"></div>
+      <button id="btn-look-shop" class="btn btn-secondary btn-lg">🛒 לחנות האביזרים</button>
+    </div>
+  </section>
+
   <!-- ===== חנות ===== -->
   <section id="screen-shop" class="screen">
     <header class="sub-header">
@@ -261,6 +285,7 @@
     <div class="sub-tabs">
       <button class="sub-tab active" data-shoptab="boots">👟 נעליים</button>
       <button class="sub-tab" data-shoptab="nrg">⚡ אנרגיה</button>
+      <button class="sub-tab" data-shoptab="acc">🎨 אביזרים</button>
     </div>
     <div id="shop-body" class="shop-body"></div>
   </section>
@@ -483,6 +508,7 @@
 <script src="js/casino.js"></script>
 <script src="js/career.js"></script>
 <script src="js/match.js"></script>
+<script src="js/look.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>
 </body>

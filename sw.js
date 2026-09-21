@@ -1,4 +1,4 @@
-const CACHE_NAME = "star-striker-v13";
+const CACHE_NAME = "star-striker-v14";
 const ASSETS = [
   "./",
   "./index.html",
@@ -9,6 +9,7 @@ const ASSETS = [
   "./js/engine.js",
   "./js/pitch.js",
   "./js/situation.js",
+  "./js/look.js",
   "./js/aim.js",
   "./js/dribble.js",
   "./js/casino.js",

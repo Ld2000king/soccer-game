@@ -5,7 +5,7 @@ const SAVE_KEY = "starStrikerSave_v1";
 const Career = {
   state: null,
 
-  newGame(name, position, clubId){
+  newGame(name, position, clubId, look){
     const club = CLUBS.find(c=>c.id===clubId);
     const base = { pace:45, shooting:45, passing:45, dribbling:45, defending:45, physical:45 };
     // boost key stats for chosen position
@@ -23,6 +23,8 @@ const Career = {
         goals:0, assists:0, appearances:0, form:0,
         lifestyle:{},        // categoryId -> itemId owned
         boots:"street",      // equipped boots id
+        look:{ ...defaultLook(), ...(look||{}), acc:{}, tints:{} },  // hair / skin / boot colour + worn accessories
+        accOwned:[],         // accessory ids bought in the shop
         inventory:{},        // consumableId -> count owned
         activeBoost:null,    // {energy, morale} consumed at next match
         sponsors:[],         // signed sponsor ids
@@ -169,6 +171,40 @@ const Career = {
     p.money -= boots.cost;
     p.boots = id;
     this.addNews(`${p.name} נועל ${boots.name}.`);
+    this.save();
+    return true;
+  },
+
+  // ---- Look: hair, skin and boot colour are free; accessories are bought ----
+  playerLook(){ return resolveLook(this.state.player.look); },
+  setLook(patch){
+    Object.assign(this.state.player.look, patch);
+    this.save();
+  },
+  buyAccessory(id){
+    const p = this.state.player;
+    const item = ACCESSORIES.find(a=>a.id===id);
+    if(!item || p.accOwned.includes(id) || p.money < item.cost) return false;
+    p.money -= item.cost;
+    p.accOwned.push(id);
+    this.addNews(`${p.name} קנה ${item.name}.`);
+    this.wearAccessory(id, true);
+    return true;
+  },
+  // wearing an item takes off whatever else was in its slot
+  wearAccessory(id, on){
+    const p = this.state.player;
+    const item = ACCESSORIES.find(a=>a.id===id);
+    if(!item || !p.accOwned.includes(id)) return false;
+    if(on) ACCESSORIES.filter(a=>a.slot===item.slot).forEach(a=> delete p.look.acc[a.id]);
+    if(on) p.look.acc[id] = true; else delete p.look.acc[id];
+    this.save();
+    return true;
+  },
+  setAccessoryTint(id, color){
+    const p = this.state.player;
+    if(!p.accOwned.includes(id)) return false;
+    p.look.tints[id] = color;
     this.save();
     return true;
   },
@@ -608,6 +644,10 @@ const Career = {
     delete p.chemistry; delete p.coachTrust;
     if(p.starBucks==null) p.starBucks = 60;
     if(p.boots==null) p.boots = "street";
+    if(p.look==null) p.look = defaultLook();
+    if(p.look.acc==null) p.look.acc = {};
+    if(p.look.tints==null) p.look.tints = {};
+    if(p.accOwned==null) p.accOwned = [];
     if(p.inventory==null) p.inventory = {};
     if(p.sponsors==null) p.sponsors = [];
     if(p.workRate==null) p.workRate = "mid";

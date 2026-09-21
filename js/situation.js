@@ -131,6 +131,7 @@ function buildSituation(type, m, kits){
     sit.ball = { x: sit.attacker.x - 0.7, y: sit.attacker.y - 1, z: 0 };
     sit.markers.push({ type:"danger", at:[sit.ball.x, sit.ball.y] });
   }
+  sit.hero.look = Career.playerLook();
   sit.me = me; sit.them = them; sit.flip = flip;
   return sit;
 }

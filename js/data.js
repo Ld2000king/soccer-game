@@ -459,3 +459,102 @@ const SPONSORS = [
   { id:"watch",       name:"בית שעונים שווייצרי", icon:"⌚", reqReputation:75,  weekly:6500,  signBonus:70000,  desc:"אתה עכשיו 'שגריר המותג'." },
   { id:"global_car",  name:"יצרנית רכב עולמית",   icon:"🚘", reqReputation:110, weekly:15000, signBonus:200000, desc:"קמפיין בינלאומי. אתה הפנים." },
 ];
+
+// ===== Player appearance =====
+// The look is cosmetic and free to change any time — hair, skin and boot colour.
+// Accessories are bought in the shop and worn on top. `style` ids are drawn
+// by SoccerKit.drawFigure (js/pitch.js).
+const SKIN_TONES = ["#fbe0c8", "#f2caa4", "#e3a97f", "#c0864f", "#8a5530", "#4f2f1c"];
+
+const HAIR_STYLES = [
+  { id:"short",    label:"קצר" },
+  { id:"buzz",     label:"מכונה" },
+  { id:"bald",     label:"קירח" },
+  { id:"curly",    label:"מתולתל" },
+  { id:"afro",     label:"אפרו" },
+  { id:"mohawk",   label:"מוהוק" },
+  { id:"long",     label:"ארוך" },
+  { id:"ponytail", label:"קוקו" },
+  { id:"bun",      label:"פקעת" },
+  { id:"dreads",   label:"ראסטות" },
+];
+
+const HAIR_COLORS = [
+  { color:"#1e1611", label:"שחור" },
+  { color:"#4a3021", label:"חום כהה" },
+  { color:"#7a5230", label:"חום" },
+  { color:"#d9b45a", label:"בלונד" },
+  { color:"#b8452c", label:"ג'ינג'י" },
+  { color:"#c9ced6", label:"אפור" },
+  { color:"#2f7be0", label:"כחול" },
+  { color:"#e0479a", label:"ורוד" },
+  { color:"#3ecf6a", label:"ירוק" },
+];
+
+const BOOT_COLORS = [
+  { color:"#16161a", label:"שחור" },
+  { color:"#f4f4f4", label:"לבן" },
+  { color:"#e0241c", label:"אדום" },
+  { color:"#1f5fe0", label:"כחול" },
+  { color:"#b6f23a", label:"ירוק ניאון" },
+  { color:"#ff8c1a", label:"כתום" },
+  { color:"#f2c94c", label:"זהב" },
+  { color:"#ff5fb0", label:"ורוד" },
+  { color:"#8a4dff", label:"סגול" },
+  { color:"#aeb6c2", label:"כסף" },
+];
+
+// colours a tintable accessory (headband, wristbands…) can be worn in
+const TINT_COLORS = [
+  { color:"#f4f4f4", label:"לבן" },
+  { color:"#16161a", label:"שחור" },
+  { color:"#e0241c", label:"אדום" },
+  { color:"#1f5fe0", label:"כחול" },
+  { color:"#f2d21b", label:"צהוב" },
+  { color:"#1e9e3a", label:"ירוק" },
+  { color:"#ff8c1a", label:"כתום" },
+  { color:"#ff5fb0", label:"ורוד" },
+  { color:"#8a4dff", label:"סגול" },
+  { color:"#2fd0e0", label:"תכלת" },
+];
+
+// One item per slot at a time. `tint` (a colour) marks the item as recolourable
+// and is the colour it comes in.
+const ACCESSORIES = [
+  { id:"headband",   slot:"head",   icon:"🎗️", name:"סרט ראש",          cost:700,    tint:"#f4f4f4", desc:"מחזיק את השיער ואת הראש קר." },
+  { id:"sunglasses", slot:"eyes",   icon:"🕶️", name:"משקפי שמש",        cost:1500,   desc:"גם במגרש. גם בלילה." },
+  { id:"earring",    slot:"ears",   icon:"💍", name:"עגיל כסף",         cost:2000,   desc:"קטן, נקי, מבריק." },
+  { id:"diamond",    slot:"ears",   icon:"💎", name:"עגיל יהלום",       cost:35000,  desc:"מנצנץ בכל צילום של הקהל." },
+  { id:"chain",      slot:"neck",   icon:"📿", name:"שרשרת זהב",        cost:15000,  desc:"כוכבים לא מסתירים את הזהב." },
+  { id:"wristbands", slot:"wrists", icon:"⭕", name:"מפרקות",           cost:500,    tint:"#f4f4f4", desc:"סגנון של שנות התשעים." },
+  { id:"gloves",     slot:"wrists", icon:"🧤", name:"כפפות חורף",       cost:1100,   tint:"#16161a", desc:"כי קר בערב יום שישי." },
+  { id:"captain",    slot:"armband",icon:"👑", name:"סרט קפטן",         cost:3500,   tint:"#f2d21b", desc:"הקבוצה בוחרת בך. או שקנית את זה." },
+  { id:"thermal",    slot:"sleeves",icon:"🧥", name:"שרוולים תרמיים",   cost:1500,   tint:"#16161a", desc:"שרוול ארוך מתחת לחולצה." },
+];
+
+function defaultLook(){
+  return { skin:SKIN_TONES[2], style:"short", hair:HAIR_COLORS[0].color, boot:BOOT_COLORS[0].color, acc:{}, tints:{} };
+}
+
+function randomLook(){
+  const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+  const look = defaultLook();
+  look.skin = pick(SKIN_TONES);
+  look.style = pick(HAIR_STYLES).id;
+  // keep the loud colours for the shop-window "fun" pick, not the default roll
+  look.hair = pick(HAIR_COLORS.slice(0, 6)).color;
+  look.boot = pick(BOOT_COLORS).color;
+  return look;
+}
+
+// The look as the renderer wants it: `acc` maps each worn accessory to its
+// colour (or true when it has none).
+function resolveLook(look){
+  const acc = {};
+  Object.keys(look.acc || {}).forEach(id=>{
+    const item = ACCESSORIES.find(a=>a.id===id);
+    if(!item || !look.acc[id]) return;
+    acc[id] = item.tint ? ((look.tints && look.tints[id]) || item.tint) : true;
+  });
+  return { skin:look.skin, style:look.style, hair:look.hair, boot:look.boot, acc };
+}

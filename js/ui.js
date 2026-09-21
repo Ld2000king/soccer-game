@@ -74,7 +74,7 @@ function renderDashboard(){
   const s = Career.state, p = s.player;
   const club = Career.myClub();
 
-  $("#hud-avatar").textContent = p.name.slice(0,1).toUpperCase();
+  renderAvatar($("#hud-avatar"), p);
   $("#hud-crest").innerHTML = clubCrestSVG(club, 34);
   $("#week-crest-watermark").innerHTML = clubCrestSVG(club, 150);
   $("#hud-name").textContent = p.name;
@@ -262,7 +262,9 @@ function renderShop(){
   const body = $("#shop-body");
   body.innerHTML = "";
 
-  if(shopTab==="boots"){
+  if(shopTab==="acc"){
+    renderAccessoryShop(body);
+  } else if(shopTab==="boots"){
     BOOTS.forEach(b=>{
       const equipped = p.boots===b.id;
       const canAfford = p.money >= b.cost;
@@ -641,6 +643,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
   $("#btn-new-game").addEventListener("click", ()=>{
     createState = {position:null, clubId:null};
     showScreen("screen-create");
+    CreateLook.reset();
   });
 
   $("#btn-continue").addEventListener("click", ()=>{
@@ -650,7 +653,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
 
   $("#btn-start-career").addEventListener("click", ()=>{
     const name = $("#input-name").value.trim();
-    Career.newGame(name, createState.position, createState.clubId);
+    Career.newGame(name, createState.position, createState.clubId, createState.look);
     goDashboard();
   });
 
@@ -662,6 +665,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
     "screen-hub": renderHub,
     "screen-skills": renderSkills,
     "screen-shop": renderShop,
+    "screen-look": renderLookScreen,
     "screen-sponsors": renderSponsors,
     "screen-casino": renderCasino,
     "screen-career-stats": renderCareerStats,
@@ -682,7 +686,13 @@ document.addEventListener("DOMContentLoaded", ()=>{
     showScreen(id);
   }
 
+  window.openScreen = openScreen;   // look.js opens screens from buttons it builds itself
   $("#btn-hub").addEventListener("click", ()=> openScreen("screen-hub"));
+  $("#btn-look-shop").addEventListener("click", ()=>{ shopTab = "acc"; openScreen("screen-shop"); });
+  // the avatar is a div, so give it the keyboard behaviour of a button
+  $("#hud-avatar").addEventListener("keydown", (ev)=>{
+    if(ev.key==="Enter" || ev.key===" "){ ev.preventDefault(); openScreen("screen-look"); }
+  });
   // hub tiles, the dashboard's bottom nav and the tappable currency pills all
   // route through the same data-goto contract
   $$("[data-goto]").forEach(t=>{

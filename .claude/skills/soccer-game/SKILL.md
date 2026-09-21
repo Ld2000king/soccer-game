@@ -190,6 +190,20 @@ Rules for all of them:
 - `camera.screenY` (0..1, default 0.5) sets where the camera centre sits on screen. Use it to lift the action above a bottom panel.
 - Hebrew text: `FONT` falls back to Rubik, and captions switch the canvas to `direction='rtl'` automatically. Latin board and HUD text is forced to LTR so a `dir="rtl"` page doesn't mirror "GOAL!" into "!GOAL".
 
+## The player's own look (customisable)
+
+The user's player is customisable: hair style, hair colour, skin tone and boot colour are free and can be changed at any time (on the create screen and in-game). Accessories are bought in the shop and worn on top. The look is cosmetic only.
+
+- **Look object** (what `drawFigure`, `drawHead` and `drawBust` take as `look`): `{ skin, style, hair, boot, acc }`.
+  - `style` is one of: `short`, `buzz`, `bald`, `curly`, `afro`, `mohawk`, `long`, `ponytail`, `bun`, `dreads`. Other players get a stable random style.
+  - `acc` maps each worn accessory to its colour, or to `true` if it has none.
+- **Accessories**: `headband` (tint), `sunglasses`, `earring`, `diamond` (sparkles), `chain`, `wristbands` (tint), `gloves` (tint), `captain` (armband, tint), `thermal` (long sleeves, tint). One item per slot at a time.
+- **Boot colour** is a look colour. The game's `BOOTS` (with stat boosts) are a separate thing.
+- **Arms** hang outward from the shoulders. This matters: wristbands, gloves and the armband would be hidden behind the torso otherwise.
+- **Faces** are drawn only when the head radius is 9 px or more (previews and close-ups). Sprites on the pitch are faceless.
+- **`drawBust`** draws head and shoulders, used for the dashboard avatar.
+- **Shaved styles** (buzz, mohawk sides) blend the skin and hair colours as solid fills. Don't use alpha: bright hair colours would tint the whole head.
+
 ## In the user's game (Star Striker)
 
 - The repo is `github.com/Ld2000king/soccer-game`, a Hebrew RTL PWA.
@@ -200,4 +214,9 @@ Rules for all of them:
   3. The result plays out on the pitch.
   4. The game returns to the text log.
 - Kits come from `matchKits()` in `js/crest.js` (the real club colours). Keepers get `keeperKitFor()`.
+- The look data lives in `js/data.js` (`HAIR_STYLES`, `SKIN_TONES`, `HAIR_COLORS`, `BOOT_COLORS`, `TINT_COLORS`, `ACCESSORIES`, `defaultLook`, `resolveLook`).
+- Save state is `player.look` and `player.accOwned`. Old saves are migrated in `Career`.
+- The `Career` methods are `playerLook()`, `setLook()`, `buyAccessory()`, `wearAccessory()` and `setAccessoryTint()`.
+- The editor, preview and accessory cards are in `js/look.js`. It is used by the create screen, the "מראה" screen (opened from the dashboard avatar or the hub) and the shop's accessories tab.
+- The hero in situations and minigames gets `Career.playerLook()`.
 - New moment types go in `buildSituation` and `playOutcome`. Keep the moment readable above the panel; `liftForPanel` frames the ball and goal between the scoreboard and the top of the panel.

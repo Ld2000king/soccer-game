@@ -216,7 +216,7 @@ const MatchController = {
       // Same keeper strip as on the pitch behind the panel.
       const keeperKit = mode==="shoot" ? keeperKitFor(kits.theirs, kits.mine) : keeperKitFor(kits.mine, kits.theirs);
 
-      const aim = new AimShootout($("#aim-canvas"), $("#aim-hint"), mode, {attackerSkill, keeperSkill, keeperKit});
+      const aim = new AimShootout($("#aim-canvas"), $("#aim-hint"), mode, {attackerSkill, keeperSkill, keeperKit, keeperLook: mode==="save" ? Career.playerLook() : null});
       aim.start((score)=>{
         aim.stop();
         this._finishKeyMoment(ev.type, score);
@@ -227,7 +227,7 @@ const MatchController = {
       const heroSkill = Career.overall() + p.reputation/4;
       const oppClub = ctx.myIsHome ? ctx.awayClub : ctx.homeClub;
 
-      const dribble = new DribbleChallenge($("#dribble-canvas"), $("#dribble-hint"), {attackerSkill:heroSkill, defenderSkill:oppClub.rating, kits});
+      const dribble = new DribbleChallenge($("#dribble-canvas"), $("#dribble-hint"), {attackerSkill:heroSkill, defenderSkill:oppClub.rating, kits, heroLook:Career.playerLook()});
       dribble.start((score)=>{
         dribble.stop();
         this._finishKeyMoment(ev.type, score);

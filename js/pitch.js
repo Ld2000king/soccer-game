@@ -60,6 +60,11 @@
     return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
   }
 
+  function mix(a, b, k) { // blend hex colour a toward b by k (0..1)
+    const A = parseInt(a.slice(1), 16), B = parseInt(b.slice(1), 16), c = (sh) => Math.round(((A >> sh) & 255) * (1 - k) + ((B >> sh) & 255) * k);
+    return '#' + ((1 << 24) + (c(16) << 16) + (c(8) << 8) + c(0)).toString(16).slice(1);
+  }
+
   // ---------- camera ----------
   // Top-down with a slight tilt: ground y is squashed by `tilt`, heights go straight up the screen.
   function makeCamera(W, H, cam) {
@@ -305,6 +310,8 @@
   function drawFigure(ctx, sx, sy, H, kit, look, o, t) {
     kit = normKit(kit);
     look = look || { skin: PAL.skin[1], hair: PAL.hair[3] };
+    const acc = look.acc || {};
+    const bootCol = look.boot || '#16161a';
     const p = o || {};
     const face = p.facing === 'left' ? -1 : 1;
     const pose = p.pose || 'idle';
@@ -334,8 +341,13 @@
       const lift = run ? Math.max(0, Math.sin(ph + (side > 0 ? 0 : Math.PI))) * H * 0.07 : 0;
       rr(ctx, lx - H * 0.055, -H * 0.46 - lift, H * 0.11, H * 0.2, H * 0.04, skin);
       rr(ctx, lx - H * 0.058, -H * 0.27 - lift, H * 0.116, H * 0.21, H * 0.04, kit.socks);
-      ctx.fillStyle = '#16161a';
-      ctx.beginPath(); ctx.ellipse(lx + face * H * 0.015, -H * 0.045 - lift, H * 0.07, H * 0.045, 0, 0, Math.PI * 2); ctx.fill();
+      // boot: a darker sole under the coloured upper, and a glint on the toe
+      ctx.fillStyle = shade(bootCol, -0.5);
+      ctx.beginPath(); ctx.ellipse(lx + face * H * 0.015, -H * 0.033 - lift, H * 0.07, H * 0.045, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = bootCol;
+      ctx.beginPath(); ctx.ellipse(lx + face * H * 0.015, -H * 0.045 - lift, H * 0.07, H * 0.042, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.beginPath(); ctx.ellipse(lx + face * H * 0.04, -H * 0.055 - lift, H * 0.03, H * 0.013, 0, 0, Math.PI * 2); ctx.fill();
     }
     // shorts
     rr(ctx, -H * 0.18, -H * 0.56, H * 0.36, H * 0.16, H * 0.05, kit.shorts);
@@ -344,10 +356,14 @@
     for (const side of [-1, 1]) {
       const sw = -side * swing * H * 0.05;
       ctx.save();
-      ctx.translate(side * H * 0.2, -H * 0.82);
-      ctx.rotate(side * (0.18 + armUp * 0.9) + (run ? Math.sin(ph + (side > 0 ? Math.PI : 0)) * 0.5 : 0) * 0.6);
+      ctx.translate(side * H * 0.235, -H * 0.82);
+      // positive angle swings the hand outward, away from the body
+      ctx.rotate(-side * (0.24 + armUp * 1.0) + (run ? Math.sin(ph + (side > 0 ? Math.PI : 0)) * 0.5 : 0) * 0.6);
       rr(ctx, -H * 0.055, 0 + sw * 0.2, H * 0.11, H * 0.14, H * 0.045, kit.shirt);
-      rr(ctx, -H * 0.045, H * 0.12, H * 0.09, H * 0.15, H * 0.04, skin);
+      rr(ctx, -H * 0.045, H * 0.12, H * 0.09, H * 0.15, H * 0.04, acc.thermal || skin);
+      if (acc.captain && side === 1) rr(ctx, -H * 0.06, H * 0.03, H * 0.12, H * 0.05, H * 0.015, acc.captain);
+      if (acc.wristbands) rr(ctx, -H * 0.05, H * 0.2, H * 0.1, H * 0.04, H * 0.015, acc.wristbands);
+      if (acc.gloves && pose !== 'keeper') rr(ctx, -H * 0.052, H * 0.2, H * 0.104, H * 0.085, H * 0.035, acc.gloves);
       if (pose === 'keeper') { ctx.fillStyle = '#f5f5f5'; ctx.beginPath(); ctx.arc(0, H * 0.28, H * 0.055, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
       ctx.restore();
     }
@@ -366,14 +382,14 @@
     ctx.strokeStyle = kit.trim; ctx.lineWidth = Math.max(1, H * 0.025);
     ctx.beginPath(); ctx.arc(0, -H * 0.9, H * 0.07, 0.2, Math.PI - 0.2); ctx.stroke();
     ctx.strokeStyle = PAL.outline; ctx.lineWidth = Math.max(1, H * 0.018);
-    // head (big) + hair
-    const hx = face * H * 0.02, hy = -H * 1.01;
-    const hg = ctx.createRadialGradient(hx - H * 0.04, hy - H * 0.04, H * 0.02, hx, hy, H * 0.14);
-    hg.addColorStop(0, shade(skin, 0.18)); hg.addColorStop(1, shade(skin, -0.12));
-    ctx.fillStyle = hg;
-    ctx.beginPath(); ctx.arc(hx, hy, H * 0.13, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = hair;
-    ctx.beginPath(); ctx.arc(hx, hy - H * 0.01, H * 0.13, Math.PI * 1.02, Math.PI * 1.98); ctx.closePath(); ctx.fill();
+    if (acc.chain) {
+      ctx.strokeStyle = '#f2c94c'; ctx.lineWidth = Math.max(1, H * 0.022);
+      ctx.beginPath(); ctx.moveTo(-H * 0.085, -H * 0.9); ctx.quadraticCurveTo(0, -H * 0.72, H * 0.085, -H * 0.9); ctx.stroke();
+      ctx.fillStyle = '#f2c94c'; ctx.strokeStyle = PAL.outline; ctx.lineWidth = Math.max(1, H * 0.012);
+      ctx.beginPath(); ctx.arc(0, -H * 0.79, H * 0.03, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
+    // head (big) + hair + face accessories
+    drawHead(ctx, face * H * 0.02, -H * 1.01, H * 0.13, look, face, t);
     ctx.restore();
 
     // "you" / focus marker: small down-arrow above head
@@ -384,6 +400,166 @@
       ctx.beginPath(); ctx.moveTo(sx - 7, my - 8); ctx.lineTo(sx + 7, my - 8); ctx.lineTo(sx, my); ctx.closePath(); ctx.fill(); ctx.stroke();
     }
     if (p.call) drawCallBubble(ctx, sx + H * 0.22, sy - H * 1.25, H * 0.42, t);
+  }
+
+  // ---------- head, hair and face accessories ----------
+  // Hair styles: short, buzz, bald, curly, afro, mohawk, long, ponytail, bun, dreads.
+  // look.acc holds the worn accessories: headband/sunglasses/earring/diamond are
+  // drawn here, the rest by drawFigure.
+  const NPC_STYLES = ['short', 'short', 'short', 'buzz', 'buzz', 'bald', 'curly', 'afro', 'long', 'mohawk', 'bun', 'ponytail'];
+
+  function hairCap(ctx, hx, hy, r, lo) { // lo: how far the sides come down (0 = at the temples)
+    ctx.beginPath();
+    ctx.arc(hx, hy - r * 0.06, r * 1.03, Math.PI * (1.02 - lo), Math.PI * (1.98 + lo));
+    ctx.closePath();
+  }
+
+  function drawHair(ctx, hx, hy, r, style, col, face, t, back, skin) {
+    const sway = Math.sin(t * 2.4) * 0.12;
+    ctx.fillStyle = col;
+    if (back) {
+      if (style === 'afro') {
+        ctx.beginPath(); ctx.arc(hx, hy - r * 0.28, r * 1.62, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      } else if (style === 'long') {
+        ctx.beginPath(); ctx.roundRect(hx - r * 1.14, hy - r * 0.7, r * 2.28, r * 2.7, r * 0.7); ctx.fill(); ctx.stroke();
+      } else if (style === 'ponytail') {
+        ctx.save();
+        ctx.translate(hx - face * r * 1.0, hy - r * 0.05);
+        ctx.rotate(-face * (0.5 + sway));
+        ctx.beginPath(); ctx.ellipse(0, r * 0.62, r * 0.34, r * 0.85, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.restore();
+      } else if (style === 'dreads') {
+        const keep = ctx.strokeStyle;
+        ctx.strokeStyle = col; ctx.lineWidth = r * 0.3;
+        [-1.02, -0.78, 0.78, 1.02].forEach((k, i) => {
+          const wob = Math.sin(t * 3 + i * 1.7) * r * 0.1;
+          ctx.beginPath(); ctx.moveTo(hx + k * r, hy - r * 0.3); ctx.lineTo(hx + k * r * 1.12 + wob, hy + r * 1.55); ctx.stroke();
+        });
+        ctx.strokeStyle = keep;
+      }
+      return;
+    }
+    switch (style) {
+      case 'bald': {
+        ctx.fillStyle = 'rgba(255,255,255,0.22)';
+        ctx.beginPath(); ctx.ellipse(hx - r * 0.3, hy - r * 0.62, r * 0.28, r * 0.13, -0.5, 0, Math.PI * 2); ctx.fill();
+        break;
+      }
+      case 'buzz': {
+        ctx.fillStyle = mix(skin, col, 0.62); hairCap(ctx, hx, hy, r, 0.02); ctx.fill();
+        break;
+      }
+      case 'curly': {
+        for (let i = 0; i < 7; i++) {
+          const a = Math.PI * (1.04 + i * 0.153);
+          ctx.beginPath(); ctx.arc(hx + Math.cos(a) * r * 0.98, hy - r * 0.06 + Math.sin(a) * r * 0.98, r * 0.3, 0, Math.PI * 2); ctx.fill();
+        }
+        hairCap(ctx, hx, hy, r * 0.98, 0.02); ctx.fill();
+        break;
+      }
+      case 'afro': {
+        hairCap(ctx, hx, hy, r, 0.06); ctx.fill();
+        break;
+      }
+      case 'mohawk': {
+        ctx.fillStyle = mix(skin, col, 0.28); hairCap(ctx, hx, hy, r, 0.02); ctx.fill();
+        ctx.fillStyle = col;
+        ctx.beginPath(); ctx.roundRect(hx - r * 0.2, hy - r * 1.62, r * 0.4, r * 1.2, r * 0.2); ctx.fill(); ctx.stroke();
+        break;
+      }
+      case 'long': {
+        hairCap(ctx, hx, hy, r, 0.07); ctx.fill();
+        break;
+      }
+      case 'bun': {
+        ctx.beginPath(); ctx.arc(hx, hy - r * 1.12, r * 0.42, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        hairCap(ctx, hx, hy, r, 0.02); ctx.fill();
+        break;
+      }
+      default: { // short, ponytail, dreads
+        hairCap(ctx, hx, hy, r, 0.02); ctx.fill();
+      }
+    }
+  }
+
+  // Screen-space head centred on (hx, hy) with radius r. Outline width comes from r,
+  // so a big preview and a tiny sprite match.
+  function drawHead(ctx, hx, hy, r, look, face, t) {
+    const skin = look.skin || PAL.skin[1], hair = look.hair || PAL.hair[3], style = look.style || 'short';
+    const acc = look.acc || {};
+    ctx.save();
+    ctx.lineWidth = Math.max(1, r * 0.14); ctx.strokeStyle = PAL.outline; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    drawHair(ctx, hx, hy, r, style, hair, face, t, true, skin);
+    // ears
+    ctx.fillStyle = shade(skin, -0.06);
+    for (const side of [-1, 1]) { ctx.beginPath(); ctx.arc(hx + side * r * 0.97, hy + r * 0.12, r * 0.19, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+    // head
+    const hg = ctx.createRadialGradient(hx - r * 0.3, hy - r * 0.3, r * 0.15, hx, hy, r * 1.08);
+    hg.addColorStop(0, shade(skin, 0.18)); hg.addColorStop(1, shade(skin, -0.12));
+    ctx.fillStyle = hg;
+    ctx.beginPath(); ctx.arc(hx, hy, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // a face only when the head is big enough to carry one
+    if (r >= 9) {
+      ctx.fillStyle = 'rgba(30,20,15,0.85)';
+      for (const side of [-1, 1]) { ctx.beginPath(); ctx.arc(hx + side * r * 0.36 + face * r * 0.06, hy + r * 0.1, r * 0.075, 0, Math.PI * 2); ctx.fill(); }
+      ctx.strokeStyle = 'rgba(30,20,15,0.55)'; ctx.lineWidth = Math.max(1, r * 0.07);
+      ctx.beginPath(); ctx.arc(hx + face * r * 0.05, hy + r * 0.32, r * 0.3, 0.25 * Math.PI, 0.75 * Math.PI); ctx.stroke();
+      ctx.strokeStyle = PAL.outline; ctx.lineWidth = Math.max(1, r * 0.14);
+    }
+    drawHair(ctx, hx, hy, r, style, hair, face, t, false, skin);
+    if (acc.headband) {
+      ctx.save();
+      ctx.beginPath(); ctx.arc(hx, hy, r * 1.02, 0, Math.PI * 2); ctx.clip();
+      ctx.fillStyle = acc.headband; ctx.fillRect(hx - r * 1.1, hy - r * 0.56, r * 2.2, r * 0.3);
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = Math.max(1, r * 0.06);
+      ctx.strokeRect(hx - r * 1.1, hy - r * 0.56, r * 2.2, r * 0.3);
+      ctx.restore();
+    }
+    if (acc.sunglasses) {
+      const gx = face * r * 0.06;
+      ctx.fillStyle = '#14161b'; ctx.strokeStyle = '#000'; ctx.lineWidth = Math.max(1, r * 0.06);
+      for (const side of [-1, 1]) {
+        ctx.beginPath(); ctx.roundRect(hx + gx + side * r * 0.44 - r * 0.38, hy - r * 0.1, r * 0.76, r * 0.42, r * 0.14); ctx.fill(); ctx.stroke();
+      }
+      ctx.beginPath(); ctx.moveTo(hx + gx - r * 0.06, hy + r * 0.04); ctx.lineTo(hx + gx + r * 0.06, hy + r * 0.04); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      for (const side of [-1, 1]) { ctx.beginPath(); ctx.roundRect(hx + gx + side * r * 0.44 - r * 0.28, hy - r * 0.05, r * 0.22, r * 0.07, r * 0.03); ctx.fill(); }
+    }
+    if (acc.earring || acc.diamond) {
+      const ex = hx + r * 0.97, ey = hy + r * 0.36;
+      if (acc.diamond) {
+        ctx.fillStyle = '#cdeeff'; ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = Math.max(1, r * 0.05);
+        ctx.beginPath(); ctx.arc(ex, ey, r * 0.15, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        const k = 0.6 + 0.4 * Math.sin(t * 4);
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = Math.max(1, r * 0.05);
+        ctx.beginPath(); ctx.moveTo(ex - r * 0.3 * k, ey); ctx.lineTo(ex + r * 0.3 * k, ey); ctx.moveTo(ex, ey - r * 0.3 * k); ctx.lineTo(ex, ey + r * 0.3 * k); ctx.stroke();
+      } else {
+        ctx.fillStyle = '#dfe6ee'; ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = Math.max(1, r * 0.05);
+        ctx.beginPath(); ctx.arc(ex, ey, r * 0.13, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  // Head and shoulders in a box `size` px wide, resting on y = bottom. Used for the dashboard avatar.
+  function drawBust(ctx, cx, bottom, size, kit, look, t) {
+    kit = normKit(kit);
+    const acc = look.acc || {};
+    const r = size * 0.27;
+    ctx.save();
+    ctx.lineWidth = Math.max(1, size * 0.03); ctx.strokeStyle = PAL.outline; ctx.lineJoin = 'round';
+    const g = ctx.createLinearGradient(cx - size * 0.4, bottom - size * 0.4, cx + size * 0.4, bottom);
+    g.addColorStop(0, shade(kit.shirt, 0.22)); g.addColorStop(1, shade(kit.shirt, -0.18));
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.roundRect(cx - size * 0.44, bottom - size * 0.34, size * 0.88, size * 0.6, size * 0.26); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = kit.trim; ctx.lineWidth = Math.max(1, size * 0.05);
+    ctx.beginPath(); ctx.arc(cx, bottom - size * 0.34, size * 0.15, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+    if (acc.chain) {
+      ctx.strokeStyle = '#f2c94c'; ctx.lineWidth = Math.max(1, size * 0.04);
+      ctx.beginPath(); ctx.moveTo(cx - size * 0.2, bottom - size * 0.3); ctx.quadraticCurveTo(cx, bottom - size * 0.04, cx + size * 0.2, bottom - size * 0.3); ctx.stroke();
+    }
+    drawHead(ctx, cx, bottom - size * 0.6, r, look, 1, t);
+    ctx.restore();
   }
 
   // the game's clubs only carry {shirt, shorts}; fill in the rest the way a real strip does
@@ -576,7 +752,9 @@
       for (const p of sit.players) {
         const team = sit[p.team];
         const kit = p.role === 'gk' ? (team.gkKit || KITS.keeper) : team.kit;
-        const look = { skin: p.skin || PAL.skin[(r() * PAL.skin.length) | 0], hair: p.hair || PAL.hair[(r() * PAL.hair.length) | 0] };
+        // every other player gets a stable random look; yours arrives as p.look
+        const rs = PAL.skin[(r() * PAL.skin.length) | 0], rh = PAL.hair[(r() * PAL.hair.length) | 0], rt = NPC_STYLES[(r() * NPC_STYLES.length) | 0];
+        const look = p.look || { skin: p.skin || rs, hair: p.hair || rh, style: p.style || rt };
         items.push({ y: cam.proj(p.x, p.y).y, draw: () => drawPlayer(ctx, cam, p, kit, t, look) });
       }
       if (sit.ball) items.push({ y: cam.proj(sit.ball.x, sit.ball.y).y + 0.1, draw: () => drawBall(ctx, cam, sit.ball, t) });
@@ -590,6 +768,6 @@
 
   global.SoccerKit = {
     createRenderer, makeCamera, KITS, PAL, PITCH, drawBanner, drawScoreboard, shade,
-    drawFigure, drawBallIcon, drawCallBubble, makeNoisePattern, normKit, slantText, FONT, rng,
+    drawFigure, drawBust, drawHead, drawBallIcon, drawCallBubble, makeNoisePattern, normKit, slantText, FONT, rng,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
