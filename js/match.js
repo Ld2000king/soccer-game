@@ -217,9 +217,9 @@ const MatchController = {
       const keeperKit = mode==="shoot" ? keeperKitFor(kits.theirs, kits.mine) : keeperKitFor(kits.mine, kits.theirs);
 
       const aim = new AimShootout($("#aim-canvas"), $("#aim-hint"), mode, {attackerSkill, keeperSkill, keeperKit, keeperLook: mode==="save" ? Career.playerLook() : null});
-      aim.start((score)=>{
+      aim.start((score, detail)=>{
         aim.stop();
-        this._finishKeyMoment(ev.type, score);
+        this._finishKeyMoment(ev.type, score, detail);
       });
     } else if(ev.type==="dribble"){
       $("#dribble-mode").classList.remove("hidden");
@@ -228,9 +228,9 @@ const MatchController = {
       const oppClub = ctx.myIsHome ? ctx.awayClub : ctx.homeClub;
 
       const dribble = new DribbleChallenge($("#dribble-canvas"), $("#dribble-hint"), {attackerSkill:heroSkill, defenderSkill:oppClub.rating, kits, heroLook:Career.playerLook()});
-      dribble.start((score)=>{
+      dribble.start((score, detail)=>{
         dribble.stop();
-        this._finishKeyMoment(ev.type, score);
+        this._finishKeyMoment(ev.type, score, detail);
       });
     } else {
       $("#timing-mode").classList.remove("hidden");
@@ -255,10 +255,10 @@ const MatchController = {
     SituationView.liftForPanel($("#minigame-overlay .minigame-box").offsetTop);
   },
 
-  async _finishKeyMoment(type, score){
+  async _finishKeyMoment(type, score, detail){
     $("#minigame-overlay").classList.add("hidden");
     SituationView.liftForPanel(null);
-    await SituationView.playOutcome(type, score > 0.5);
+    await SituationView.playOutcome(type, score > 0.5, detail);
     SituationView.hide();
     this._applyKeyResult(type, score);
   },

@@ -66,7 +66,6 @@ function buildSituation(type, m, kits){
     add(me, 54, 33, { pose:"jog" });
     sit.ball = { x: sit.hero.x + 0.6, y: sit.hero.y - 0.8, z: 0 };
     sit.markers.push({ type:"control", at:[sit.ball.x, sit.ball.y] });
-    sit.markers.push({ type:"target", at:[X(31.5), 0.8], r:0.9 });
   } else if(type==="pass" && isGK){
     // build-up from the back: you have it in your hands, a full-back is calling
     sit.camera = { x: 34, y: 17, zoom: 14 };
@@ -256,7 +255,9 @@ const SituationView = {
 
   // Plays the result of the minigame out on the pitch. Resolves when the
   // caller can move on to the log.
-  async playOutcome(type, success){
+  // detail carries what the minigame decided (aim/dive zones, dribble lanes), so
+  // the replay on the pitch goes the way the player chose — left is left.
+  async playOutcome(type, success, detail){
     const sit = this.sit;
     if(!sit) return;
     sit.markers = sit.markers.filter(mk=> mk.type==="control");
@@ -266,19 +267,27 @@ const SituationView = {
     const b = sit.ball, hero = sit.hero;
     const side = (sgn)=> 34 + sgn*(1.6 + Math.random()*1.6); // a spot inside the goal mouth
     const sgn = Math.random()<0.5 ? -1 : 1;
-    const inNet = (x)=> ({ x, y: -1.3, z: 0.7 });
+    const inNet = (x, z=0.7)=> ({ x, y: -1.3, z });
+    // the aim grid is thirds of the goal mouth (7.32 m), seen from behind the ball,
+    // and the pitch camera looks the same way, so a zone's column is its screen side
+    const ZX = 2.44;
+    const zoneAt = (id)=>{ const z = zoneById(id); return { x: 34 + (z.col-1)*ZX, z: z.row===0 ? 1.8 : 0.45 }; };
+    const leanFor = (x)=> Math.max(-0.9, Math.min(0.9, (x-34)/ZX*0.9));
 
     if(type==="shoot"){
       const gx = side(sgn);
+      const shot = detail ? zoneAt(detail.shotZone) : { x: gx, z: 0.7 };
+      const dive = detail ? zoneAt(detail.diveZone) : { x: success ? 34 - sgn*1.8 : gx };
+      sit.markers.push({ type:"target", at:[shot.x, 0.8], r:0.9 });   // the spot you picked
       if(success){
-        this.tween(sit.keeper, { x: 34 - sgn*1.8, lean: -sgn*0.9 }, 520);
-        await this.tween(b, inNet(gx), 560, { arc: 1.4 });
+        this.tween(sit.keeper, { x: dive.x, lean: leanFor(dive.x) }, 520);
+        await this.tween(b, inNet(shot.x, shot.z), 560, { arc: 1.4 });
         this._goal(sit.me);
         hero.pose = "celebrate"; hero.marker = false;
         this.caption("גול!!!");
       } else {
-        this.tween(sit.keeper, { x: gx, lean: sgn*0.9 }, 480);
-        await this.tween(b, { x: gx, y: 3.3, z: 0.9 }, 520, { arc: 0.9 });
+        this.tween(sit.keeper, { x: dive.x, lean: leanFor(dive.x) }, 480);
+        await this.tween(b, { x: shot.x, y: 3.3, z: shot.z }, 520, { arc: 0.9 });
         this.caption("השוער עוצר!");
       }
     } else if(type==="pass"){
@@ -304,20 +313,29 @@ const SituationView = {
       }
     } else if(type==="dribble"){
       const d = sit.defender;
-      const dir = hero.x < 34 ? 1 : -1;
+      // the swipe picks a lane, left/centre/right of where you stand, and the defender
+      // has read one too; without detail, fall back to a random side
+      const off = { L:-3.2, C:0, R:3.2 };
+      const lane = detail ? detail.lane : (Math.random()<0.5 ? "L" : "R");
+      const defLane = detail ? detail.defLane : (success ? (lane==="L" ? "R" : "L") : lane);
+      const hx = hero.x + off[lane];          // where you run
+      const dx = hero.x + off[defLane];       // where he lunges
       if(success){
         hero.marker = false;
-        this.tween(d, { x: d.x - dir*2.2, lean: -dir*0.8 }, 450);
-        this.tween(hero, { x: hero.x + dir*3.5, y: d.y - 6 }, 760);
-        await this.tween(b, { x: hero.x + dir*3.5 + 0.5, y: d.y - 6.9 }, 760);
+        this.tween(d, { x: dx, y: d.y + 1.2, lean: defLane==="L" ? -0.8 : defLane==="R" ? 0.8 : 0 }, 450);
+        this.tween(hero, { x: hx, y: d.y - 6 }, 760);
+        await this.tween(b, { x: hx + 0.5, y: d.y - 6.9 }, 760);
         this.caption("עבר אותו!");
       } else {
-        this.tween(hero, { y: hero.y - 2 }, 420);
-        this.tween(d, { x: b.x, y: b.y - 0.6 }, 380);
+        // he reaches you: dead on if you picked the same lane, a shoulder challenge if next to it
+        const meet = hx + (dx - hx)*0.3;
+        this.tween(hero, { x: hx, y: hero.y - 2 }, 420);
+        this.tween(b, { x: hx + 0.5, y: hero.y - 2.9 }, 420);   // the ball goes with you
+        this.tween(d, { x: meet, y: b.y - 2.2 }, 380);
         await this.wait(380);
         d.pose = "run";
         this.tween(d, { y: d.y + 7 }, 700);
-        await this.tween(b, { y: b.y + 7.4 }, 700);
+        await this.tween(b, { x: meet + 0.4, y: b.y + 5 }, 700);
         hero.pose = "idle";
         this.caption("איבדת את הכדור!");
       }
@@ -339,13 +357,15 @@ const SituationView = {
       }
     } else { // save
       const gx = side(sgn);
+      const shot = detail ? zoneAt(detail.shotZone) : { x: gx, z: 0.7 };
+      const dive = detail ? zoneAt(detail.diveZone) : { x: success ? gx : 34 - sgn*1.8 };
       if(success){
-        this.tween(hero, { x: gx, lean: sgn*0.9 }, 430);
-        await this.tween(b, { x: gx, y: 1.8, z: 0.9 }, 460, { arc: 0.8 });
+        this.tween(hero, { x: dive.x, lean: leanFor(dive.x) }, 430);
+        await this.tween(b, { x: shot.x, y: 1.8, z: shot.z }, 460, { arc: 0.8 });
         this.caption("הצלה!!");
       } else {
-        this.tween(hero, { x: 34 - sgn*1.8, lean: -sgn*0.9 }, 470);
-        await this.tween(b, inNet(gx), 500, { arc: 1 });
+        this.tween(hero, { x: dive.x, lean: leanFor(dive.x) }, 470);
+        await this.tween(b, inNet(shot.x, shot.z), 500, { arc: 1 });
         this._goal(sit.them);
         sit.attacker.pose = "celebrate";
         this.caption("גול ליריבה");

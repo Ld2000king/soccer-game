@@ -103,7 +103,9 @@ class AimShootout{
         ? (saved ? "השוער קרא את הכיוון וחסם!" : "הרשת רועדת!")
         : (saved ? "הצלה מדהימה!" : "הכדור נכנס, אין מה לעשות.");
       const success = this.mode==="shoot" ? !saved : saved;
-      setTimeout(()=> this.onResolve(success ? 1 : 0), 500);
+      // the pitch replays exactly this: where the ball went and where the keeper dived
+      const detail = { mode:this.mode, shotZone:shotZoneId, diveZone:diveShown };
+      setTimeout(()=> this.onResolve(success ? 1 : 0, detail), 500);
     });
   }
 

@@ -84,7 +84,9 @@ class DribbleChallenge{
     this._animate(userLaneId, defLaneId, success, ()=>{
       // after the play, so the hint no longer gives the result away up front
       this.hint.textContent = success ? "עבר את המגן!" : "המגן חטף את הכדור!";
-      setTimeout(()=> this.onResolve(success ? 1 : 0), 450);
+      // the pitch replays exactly this: the lane you took and the lane the defender read
+      const detail = { lane:userLaneId, defLane:defLaneId };
+      setTimeout(()=> this.onResolve(success ? 1 : 0, detail), 450);
     });
   }
 

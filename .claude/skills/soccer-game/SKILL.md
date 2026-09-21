@@ -219,4 +219,10 @@ The user's player is customisable: hair style, hair colour, skin tone and boot c
 - The `Career` methods are `playerLook()`, `setLook()`, `buyAccessory()`, `wearAccessory()` and `setAccessoryTint()`.
 - The editor, preview and accessory cards are in `js/look.js`. It is used by the create screen, the "מראה" screen (opened from the dashboard avatar or the hub) and the shop's accessories tab.
 - The hero in situations and minigames gets `Career.playerLook()`.
+- **The pitch replays the player's choice.** Whatever the minigame decided must be what the big pitch shows.
+  - `AimShootout` and `DribbleChallenge` pass a `detail` to their callback: the shot and dive zones, or the lane taken and the lane the defender read.
+  - `SituationView.playOutcome(type, success, detail)` uses it. Left is left, right is right, high is high, and the keeper dives where he dived.
+  - The pitch camera and the aim canvas both look at the goal from behind the ball, so a zone's column is its screen side.
+  - Never pick a random side in an outcome when a choice exists.
+  - Don't pre-place an aim target on the pitch; it reads as a hint for a fixed side. The target ring appears on the chosen spot.
 - New moment types go in `buildSituation` and `playOutcome`. Keep the moment readable above the panel; `liftForPanel` frames the ball and goal between the scoreboard and the top of the panel.
