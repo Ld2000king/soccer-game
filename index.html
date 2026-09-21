@@ -16,7 +16,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="style.css">
 </head>
@@ -357,7 +357,12 @@
     <div id="match-log" class="match-log"></div>
     <div id="goal-toast" class="goal-toast hidden">GOAL!</div>
 
-    <div id="minigame-overlay" class="minigame-overlay hidden">
+    <!-- key moments cut to the situation on the pitch (js/situation.js) -->
+    <div id="situation" class="situation hidden">
+      <canvas id="situation-canvas"></canvas>
+    </div>
+
+    <div id="minigame-overlay" class="minigame-overlay on-pitch hidden">
       <div class="minigame-box">
         <h3 id="minigame-title">רגע מכריע!</h3>
 
@@ -471,6 +476,8 @@
 <script src="js/data.js"></script>
 <script src="js/crest.js"></script>
 <script src="js/engine.js"></script>
+<script src="js/pitch.js"></script>
+<script src="js/situation.js"></script>
 <script src="js/aim.js"></script>
 <script src="js/dribble.js"></script>
 <script src="js/casino.js"></script>

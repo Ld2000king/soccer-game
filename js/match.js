@@ -1,7 +1,8 @@
 // ===== Interactive match orchestration =====
 // The match plays as a live text log. The pitch is never shown in full —
-// only when a moment involves the player's own player does the view zoom
-// in close (aim/dribble/timing overlays) and hand control to the user.
+// only when a moment involves the player's own player does the game cut to
+// that situation on the pitch (js/situation.js), hand control to the user
+// through a minigame panel, and play the result out before the log resumes.
 
 function samplePoisson(lambda){
   const L = Math.exp(-lambda);
@@ -59,6 +60,7 @@ const MatchController = {
     $("#match-minute").textContent = "0";
     $("#match-end-overlay").classList.add("hidden");
     $("#minigame-overlay").classList.add("hidden");
+    SituationView.hide();
     $("#goal-toast").classList.add("hidden");
     $("#goal-toast").classList.remove("show");
 
@@ -144,7 +146,8 @@ const MatchController = {
     log.scrollTop = log.scrollHeight;
   },
 
-  _goalScored(side){
+  // toast:false when the goal was already shown on the pitch
+  _goalScored(side, toast=true){
     const ctx = this.ctx;
     ctx.score[side]++;
     const scoreEl = $("#match-score");
@@ -152,12 +155,13 @@ const MatchController = {
     scoreEl.classList.remove("bump");
     void scoreEl.offsetWidth;
     scoreEl.classList.add("bump");
+    if(!toast) return;
 
-    const toast = $("#goal-toast");
-    toast.classList.remove("hidden", "show");
-    void toast.offsetWidth;
-    toast.classList.add("show");
-    setTimeout(()=> toast.classList.add("hidden"), 1300);
+    const toastEl = $("#goal-toast");
+    toastEl.classList.remove("hidden", "show");
+    void toastEl.offsetWidth;
+    toastEl.classList.add("show");
+    setTimeout(()=> toastEl.classList.add("hidden"), 1300);
   },
 
   _resolveBackground(ev){
@@ -180,7 +184,6 @@ const MatchController = {
     };
     this._logEvent(`🔥 ${ctx.minute}' — הכדור אצלך! ${titles[ev.type]}`, {key:true});
     $("#minigame-title").textContent = `${ctx.minute}' — ${titles[ev.type]}`;
-    $("#minigame-overlay").classList.remove("hidden");
     $("#timing-mode").classList.add("hidden");
     $("#aim-mode").classList.add("hidden");
     $("#dribble-mode").classList.add("hidden");
@@ -190,6 +193,17 @@ const MatchController = {
     const myClub = Career.myClub();
     const kits = matchKits(myClub, ctx.myIsHome ? ctx.awayClub : ctx.homeClub);
 
+    // cut to the situation on the pitch first; the minigame slides up once
+    // the player has had a moment to read it
+    SituationView.show(buildSituation(ev.type, ctx, kits));
+    setTimeout(()=> this._openMinigame(ev, kits), 1400);
+  },
+
+  _openMinigame(ev, kits){
+    const ctx = this.ctx, p = ctx.p;
+    SituationView.caption(null);
+    $("#minigame-overlay").classList.remove("hidden");
+
     if(ev.type==="shoot" || ev.type==="save"){
       $("#aim-mode").classList.remove("hidden");
 
@@ -198,14 +212,14 @@ const MatchController = {
       const mode = ev.type==="shoot" ? "shoot" : "save";
       const attackerSkill = mode==="shoot" ? heroSkill : oppClub.rating;
       const keeperSkill = mode==="shoot" ? oppClub.rating : heroSkill;
-      // shooting means you face their keeper; saving means the keeper is you
-      const keeperKit = mode==="shoot" ? kits.theirs : kits.mine;
+      // shooting means you face their keeper; saving means the keeper is you.
+      // Same keeper strip as on the pitch behind the panel.
+      const keeperKit = mode==="shoot" ? keeperKitFor(kits.theirs, kits.mine) : keeperKitFor(kits.mine, kits.theirs);
 
       const aim = new AimShootout($("#aim-canvas"), $("#aim-hint"), mode, {attackerSkill, keeperSkill, keeperKit});
       aim.start((score)=>{
         aim.stop();
-        $("#minigame-overlay").classList.add("hidden");
-        this._applyKeyResult(ev.type, score);
+        this._finishKeyMoment(ev.type, score);
       });
     } else if(ev.type==="dribble"){
       $("#dribble-mode").classList.remove("hidden");
@@ -216,8 +230,7 @@ const MatchController = {
       const dribble = new DribbleChallenge($("#dribble-canvas"), $("#dribble-hint"), {attackerSkill:heroSkill, defenderSkill:oppClub.rating, kits});
       dribble.start((score)=>{
         dribble.stop();
-        $("#minigame-overlay").classList.add("hidden");
-        this._applyKeyResult(ev.type, score);
+        this._finishKeyMoment(ev.type, score);
       });
     } else {
       $("#timing-mode").classList.remove("hidden");
@@ -233,11 +246,21 @@ const MatchController = {
       const handler = ()=>{
         btn.removeEventListener("click", handler);
         const score = bar.hit();
-        $("#minigame-overlay").classList.add("hidden");
-        this._applyKeyResult(ev.type, score);
+        this._finishKeyMoment(ev.type, score);
       };
       btn.addEventListener("click", handler);
     }
+    // the panel's height depends on which minigame is in it; offsetTop is the
+    // laid-out position, unaffected by the slide-up animation
+    SituationView.liftForPanel($("#minigame-overlay .minigame-box").offsetTop);
+  },
+
+  async _finishKeyMoment(type, score){
+    $("#minigame-overlay").classList.add("hidden");
+    SituationView.liftForPanel(null);
+    await SituationView.playOutcome(type, score > 0.5);
+    SituationView.hide();
+    this._applyKeyResult(type, score);
   },
 
   _applyKeyResult(type, score){
@@ -252,7 +275,7 @@ const MatchController = {
       if(success){
         p.goals++; ctx.perf.goals++;
         this._logEvent(`🌟 ${ctx.minute}' — ${p.name} כובש בעצמו! שער מדהים!`, {goal:true});
-        this._goalScored(heroSide);
+        this._goalScored(heroSide, false);
         p.reputation += 1;
       } else {
         this._logEvent(`${ctx.minute}' — ${p.name} בעט אך ההזדמנות התבזבזה.`);
@@ -261,7 +284,7 @@ const MatchController = {
       if(success){
         p.assists++; ctx.perf.assists++;
         this._logEvent(`🎯 ${ctx.minute}' — בישול נהדר של ${p.name}! השער מתקבל!`, {goal:true});
-        this._goalScored(heroSide);
+        this._goalScored(heroSide, p.position==="GK");
         p.reputation += 1;
       } else {
         this._logEvent(`${ctx.minute}' — המסירה של ${p.name} לא הגיעה ליעדה.`);
@@ -281,14 +304,14 @@ const MatchController = {
         this._logEvent(`🛡️ ${ctx.minute}' — התערבות מצוינת של ${p.name} עוצרת התקפה מסוכנת!`);
       } else {
         this._logEvent(`${ctx.minute}' — ${p.name} איחר להתערב, וזה עולה ביוקר.`, {goal:true});
-        this._goalScored(oppSide);
+        this._goalScored(oppSide, false);
       }
     } else if(type==="save"){
       if(success){
         this._logEvent(`🧤 ${ctx.minute}' — הצלה מדהימה של ${p.name}!`);
       } else {
         this._logEvent(`${ctx.minute}' — ${p.name} לא הצליח להדוף, גול ליריבה.`, {goal:true});
-        this._goalScored(oppSide);
+        this._goalScored(oppSide, false);
       }
     }
     setTimeout(()=> this._runNext(), 1100);

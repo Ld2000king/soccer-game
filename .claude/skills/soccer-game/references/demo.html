@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Soccer Situations Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; height: 100%; background: #1b1e22; font-family: Oswald, sans-serif; }
+  .wrap { display: flex; gap: 16px; justify-content: center; align-items: center; min-height: 100%; padding: 16px; box-sizing: border-box; flex-wrap: wrap; }
+  canvas { width: min(390px, 92vw); height: min(780px, 184vw); border-radius: 36px; background: #3f931f; box-shadow: 0 20px 50px rgba(0,0,0,.5); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="a"></canvas>
+  <canvas id="b"></canvas>
+</div>
+<script src="soccer-render-kit.js"></script>
+<script>
+const K = SoccerKit.KITS;
+const EAST = { abbr: 'EAST B', score: 0, kit: K.red };
+const OX   = { abbr: 'OX CTY', score: 1, kit: K.blue };
+
+// Reference 1: attacking toward a goal on the RIGHT (rotation 90), controlled ball near the byline, teammate calling.
+const cornerAttack = {
+  type: 'cross', minute: 22, home: EAST, away: OX,
+  camera: { x: 36, y: 11, zoom: 14, rotation: 90 },
+  ball: { x: 57, y: 8, z: 0 },
+  players: [
+    { team: 'home', x: 34, y: 1.5, role: 'gk', pose: 'keeper' },
+    { team: 'home', x: 22, y: 8, pose: 'idle' },
+    { team: 'home', x: 27, y: 12, pose: 'idle' },
+    { team: 'home', x: 38, y: 16, pose: 'idle' },
+    { team: 'home', x: 47, y: 10, pose: 'idle' },
+    { team: 'home', x: 50, y: 23, pose: 'idle' },
+    { team: 'away', x: 18, y: 19, pose: 'idle', facing: 'right' },
+    { team: 'away', x: 41, y: 20, pose: 'jog', call: true },
+  ],
+  markers: [{ type: 'control', at: [57, 8] }],
+  caption: 'BAFTA-STYLE CAPTION HERE!',
+};
+
+// Reference 2: goal at TOP, camera behind the play, stands + ad boards visible, faint yellow aim target.
+const goalView = {
+  type: 'counter', minute: 66, home: OX, away: { abbr: "B'TREE", score: 0, kit: K.yellow },
+  camera: { x: 34, y: 20, zoom: 13, rotation: 0 },
+  ball: { x: 32.5, y: 7, z: 0 },
+  players: [
+    { team: 'away', x: 34, y: 1.2, role: 'gk', pose: 'keeper' },
+    { team: 'away', x: 21, y: 14, pose: 'idle' },
+    { team: 'away', x: 57, y: 17, pose: 'idle' },
+    { team: 'away', x: 8, y: 33, pose: 'jog' },
+    { team: 'away', x: 21, y: 32, pose: 'jog' },
+    { team: 'away', x: 45, y: 34, pose: 'jog' },
+    { team: 'away', x: 62, y: 32, pose: 'idle' },
+    { team: 'home', x: 14, y: 19, pose: 'run', marker: true },
+  ],
+  markers: [{ type: 'target', at: [28, 4], r: 0.9 }, { type: 'pass', from: [14, 19], to: [28, 5] }],
+  caption: '"Hideously addictive, brilliantly\nsimple" — your tagline',
+};
+
+const ra = SoccerKit.createRenderer(document.getElementById('a'));
+const rb = SoccerKit.createRenderer(document.getElementById('b'));
+const t0 = performance.now();
+function frame(now) {
+  const t = (now - t0) / 1000;
+  ra.render(cornerAttack, t);
+  rb.render(goalView, t);
+  requestAnimationFrame(frame);
+}
+document.fonts.ready.then(() => requestAnimationFrame(frame));
+</script>
+</body>
+</html>

@@ -137,44 +137,58 @@ class DribbleChallenge{
     draw();
   }
 
+  // Top-down close-up in the soccer-game style: striped daylight grass with
+  // the edge of the box ahead, chunky kit figures, ball under a control ring.
+  _backdrop(){
+    if(this._bg) return this._bg;
+    const W=this.W, H=this.H, P = SoccerKit.PAL;
+    const c = document.createElement("canvas"); c.width=W; c.height=H;
+    const g = c.getContext("2d");
+    const stripes = 6;
+    for(let i=0;i<stripes;i++){
+      g.fillStyle = i%2 ? P.grassA : P.grassB;
+      g.fillRect(0, H/stripes*i, W, H/stripes+1);
+    }
+    g.fillStyle = SoccerKit.makeNoisePattern(g); g.fillRect(0,0,W,H);
+    // the penalty box you are running at, and its D
+    g.strokeStyle = "rgba(255,255,255,.94)"; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(0, H*0.1); g.lineTo(W, H*0.1); g.stroke();
+    g.beginPath(); g.ellipse(W/2, H*0.1 - H*0.2, W*0.3, H*0.26, 0, 0.35*Math.PI, 0.65*Math.PI); g.stroke();
+    return (this._bg = c);
+  }
+
   _draw(){
     const ctx = this.ctx, W=this.W, H=this.H;
     ctx.clearRect(0,0,W,H);
-    ctx.fillStyle = "#0c3f24";
-    ctx.fillRect(0,0,W,H);
-    const stripes = 8;
-    for(let i=0;i<stripes;i++){
-      ctx.fillStyle = i%2===0 ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.05)";
-      ctx.fillRect(0, H/stripes*i, W, H/stripes+1);
-    }
+    ctx.drawImage(this._backdrop(), 0, 0);
     // lane guides
-    ctx.strokeStyle = "rgba(255,210,63,.25)";
-    ctx.lineWidth = 1.5; ctx.setLineDash([5,4]);
-    ctx.beginPath(); ctx.moveTo(W/3,0); ctx.lineTo(W/3,H); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(2*W/3,0); ctx.lineTo(2*W/3,H); ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,.35)";
+    ctx.lineWidth = 1.5; ctx.setLineDash([6,6]);
+    ctx.beginPath(); ctx.moveTo(W/3,H*0.1); ctx.lineTo(W/3,H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(2*W/3,H*0.1); ctx.lineTo(2*W/3,H); ctx.stroke();
     ctx.setLineDash([]);
 
-    this._drawFigure(this.defender.x, this.defender.y, this.kits.theirs.shirt, this.kits.theirs.shorts, 1);
-    this._drawFigure(this.hero.x, this.hero.y, this.kits.mine.shirt, this.kits.mine.shorts, 1.1, true);
+    // control ring under the ball: this ball is yours
+    const pulse = 1 + Math.sin(this.time*4)*0.06;
+    ctx.fillStyle = "rgba(110,255,110,.28)"; ctx.strokeStyle = "rgba(110,255,110,.75)"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(this.ball.x, this.ball.y+2, 15*pulse, 11*pulse, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
 
-    // ball
-    ctx.beginPath();
-    ctx.arc(this.ball.x, this.ball.y, 6, 0, Math.PI*2);
-    ctx.fillStyle = "#fff"; ctx.fill();
-    ctx.strokeStyle = "#222"; ctx.lineWidth = 1; ctx.stroke();
+    // depth order: whoever is further up the screen is drawn first
+    const figs = [
+      { o:this.defender, kit:this.kits.theirs, h:52, hero:false },
+      { o:this.hero, kit:this.kits.mine, h:56, hero:true },
+    ].sort((a,b)=> a.o.y - b.o.y);
+    for(const f of figs) this._drawFigure(f.o.x, f.o.y, f.kit, f.h, f.hero);
+
+    ctx.fillStyle = "rgba(0,25,0,.35)";
+    ctx.beginPath(); ctx.ellipse(this.ball.x+3, this.ball.y+3, 6, 3, 0, 0, Math.PI*2); ctx.fill();
+    SoccerKit.drawBallIcon(ctx, this.ball.x, this.ball.y - 2, 5.5, this.phase==="animating" ? this.time*12 : 0);
   }
 
-  _drawFigure(x, y, shirt, trim, s, hero){
-    const ctx = this.ctx;
-    const swing = Math.sin(this.time*5 + (hero?0:1.6)) * 3.2 * s;
-    drawFootballer(ctx, { x, y, s, shirt, trim, pose:"run", swing });
-
-    if(hero){
-      // the "this one is you" ring used to be gold, which vanished on a
-      // yellow shirt now that kits follow the clubs
-      ctx.beginPath();
-      ctx.arc(x, y-2*s, 21*s, 0, Math.PI*2);
-      ctx.strokeStyle = heroRingColor(shirt); ctx.lineWidth = 2.4; ctx.stroke();
-    }
+  _drawFigure(x, y, kit, h, hero){
+    // (x, y) is the body centre the animation moves; the figure stands on its feet below it
+    SoccerKit.drawFigure(this.ctx, x, y + 16, h, kit,
+      hero ? { skin:"#e3a97f", hair:"#6a4424" } : { skin:"#c0864f", hair:"#1e1611" },
+      { pose:"run", seed: hero ? 0 : 1.6, marker: hero ? heroRingColor(kit.shirt) : false }, this.time);
   }
 }

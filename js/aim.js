@@ -39,7 +39,7 @@ class AimShootout{
     this.t = 0;
     this.phase = "idle"; // idle -> animating -> done
     this.ball = { x:this.W/2, y:this.H-14 };
-    this.keeper = { x:this.W/2, y: this.H*0.06 + (this.H*0.62/2)*1.5 };
+    this.keeper = { x:this.W/2, y: this.H*0.68 - 92*0.5 };
     this._raf = null;
     this._clickHandler = null;
   }
@@ -161,58 +161,103 @@ class AimShootout{
   }
 
   _loop(){
-    const draw = ()=>{
+    const draw = (now)=>{
+      this.t = (now||0)/1000;
       this._draw();
       if(this.phase!=="done") this._raf = requestAnimationFrame(draw);
     };
     draw();
   }
 
-  _draw(){
-    const ctx = this.ctx, W=this.W, H=this.H;
-    ctx.clearRect(0,0,W,H);
-    // grass backdrop
-    ctx.fillStyle = "#0c3f24";
-    ctx.fillRect(0,0,W,H);
+  // Behind-the-ball view of the goal in the soccer-game style: crowd and ad
+  // boards seen through a white diamond net, bright striped grass in front.
+  _backdrop(){
+    if(this._bg) return this._bg;
+    const W=this.W, H=this.H, goalBottom = this._goalBottom();
+    const c = document.createElement("canvas"); c.width=W; c.height=H;
+    const g = c.getContext("2d"), r = SoccerKit.rng(11), P = SoccerKit.PAL;
+    const crowdH = goalBottom*0.62, boardY = crowdH, boardH = goalBottom*0.13;
+    g.fillStyle = "#30343b"; g.fillRect(0,0,W,crowdH);
+    const cols = [this.keeperKit.shirt, "#ffffff", "#ffffff", ...P.skin, "#222", "#e0241c", "#1f3fd1"];
+    for(let y=2; y<crowdH-4; y+=7){
+      g.fillStyle = (y/7|0)%2 ? "#3a3f47" : "#30343b"; g.fillRect(0,y+4,W,3);
+      for(let x=(y/7|0)%2*3; x<W; x+=6){
+        if(r()<0.12) continue;
+        g.fillStyle = cols[(r()*cols.length)|0]; g.fillRect(x, y+2, 5, 4);
+        g.fillStyle = P.skin[(r()*P.skin.length)|0]; g.fillRect(x+1, y-1, 3, 3);
+      }
+    }
+    const boards = ["#c8161d","#1d3fb8"];
+    g.font = `italic 700 ${boardH*0.62}px ${SoccerKit.FONT}`; g.textAlign="center"; g.textBaseline="middle"; g.direction="ltr";
+    for(let i=0, x=0; x<W; i++, x+=W/3){
+      g.fillStyle = boards[i%2]; g.fillRect(x, boardY, W/3, boardH);
+      g.fillStyle = "rgba(255,255,255,.18)"; g.fillRect(x, boardY, W/3, boardH*.35);
+      g.fillStyle = "#fff"; g.fillText(i%2 ? "MATCHDAY" : "STAR STRIKER", x+W/6, boardY+boardH/2+1);
+    }
+    const grassTop = boardY+boardH;
+    for(let i=0, y=grassTop; y<H; i++, y+=16+i*3){
+      g.fillStyle = i%2 ? P.grassA : P.grassB; g.fillRect(0, y, W, 16+i*3+1);
+    }
+    g.fillStyle = SoccerKit.makeNoisePattern(g); g.fillRect(0, grassTop, W, H-grassTop);
+    // goal line and a worn goal mouth
+    g.fillStyle = "rgba(255,255,255,.94)"; g.fillRect(0, goalBottom-1, W, 3);
+    const wg = g.createRadialGradient(W/2, goalBottom+10, 4, W/2, goalBottom+10, W*0.4);
+    wg.addColorStop(0,"rgba(220,235,170,.35)"); wg.addColorStop(1,"rgba(220,235,170,0)");
+    g.fillStyle = wg; g.fillRect(0, goalBottom, W, H-goalBottom);
+    return (this._bg = c);
+  }
+  _goalBottom(){ return this.H*0.62 + this.H*0.06; }
 
-    // goal mouth
-    const goalH = H*0.62;
-    ctx.fillStyle = "rgba(255,255,255,.06)";
-    ctx.fillRect(0,0,W,goalH+H*0.06);
-    // net lines
-    ctx.strokeStyle = "rgba(255,255,255,.25)";
-    ctx.lineWidth = 1;
-    for(let x=0;x<=W;x+=16){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,goalH+H*0.06); ctx.stroke(); }
-    for(let y=0;y<=goalH+H*0.06;y+=16){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
-    // posts
-    ctx.strokeStyle = "#fff"; ctx.lineWidth=4;
-    ctx.strokeRect(3,3,W-6,goalH+H*0.06-3);
-    // zone dividers (guides)
-    ctx.strokeStyle = "rgba(255,210,63,.35)";
+  _draw(){
+    const ctx = this.ctx, W=this.W, H=this.H, t=this.t||0;
+    const goalBottom = this._goalBottom();
+    ctx.clearRect(0,0,W,H);
+    ctx.drawImage(this._backdrop(), 0, 0);
+
+    // net: faint white back panel and a diamond mesh
+    ctx.fillStyle = "rgba(255,255,255,.08)"; ctx.fillRect(5,5,W-10,goalBottom-5);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(5,5,W-10,goalBottom-5); ctx.clip();
+    ctx.strokeStyle = "rgba(255,255,255,.5)"; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for(let k=-goalBottom; k<W+goalBottom; k+=13){
+      ctx.moveTo(k,0); ctx.lineTo(k+goalBottom,goalBottom);
+      ctx.moveTo(k,0); ctx.lineTo(k-goalBottom,goalBottom);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // zone guides (where you can aim)
+    ctx.strokeStyle = "rgba(255,236,90,.55)";
     ctx.lineWidth = 1.5;
     ctx.setLineDash([5,4]);
-    ctx.beginPath(); ctx.moveTo(W/3,0); ctx.lineTo(W/3,goalH+H*0.06); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(2*W/3,0); ctx.lineTo(2*W/3,goalH+H*0.06); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,H*0.5); ctx.lineTo(W,H*0.5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W/3,6); ctx.lineTo(W/3,goalBottom); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(2*W/3,6); ctx.lineTo(2*W/3,goalBottom); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(6,H*0.5); ctx.lineTo(W-6,H*0.5); ctx.stroke();
     ctx.setLineDash([]);
 
-    // keeper (small human silhouette: arms spread wide when diving)
-    this._drawKeeper();
+    // posts and crossbar: dark shadow, then white
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.strokeStyle = "rgba(0,0,0,.45)"; ctx.lineWidth = 8;
+    ctx.beginPath(); ctx.moveTo(6,goalBottom+2); ctx.lineTo(6,6); ctx.lineTo(W-4,6); ctx.lineTo(W-4,goalBottom+2); ctx.stroke();
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(4,goalBottom); ctx.lineTo(4,4); ctx.lineTo(W-4,4); ctx.lineTo(W-4,goalBottom); ctx.stroke();
 
-    // ball
-    ctx.beginPath();
-    ctx.arc(this.ball.x, this.ball.y, 8, 0, Math.PI*2);
-    ctx.fillStyle="#fff";
-    ctx.fill();
-    ctx.strokeStyle="#222"; ctx.lineWidth=1; ctx.stroke();
+    this._drawKeeper(t);
+
+    // ball: shrinks a little as it travels away toward the goal
+    const k = clamp01((this.H-14 - this.ball.y) / (this.H-14 - this.H*0.1));
+    const r = 10 - k*3.5;
+    ctx.fillStyle = "rgba(0,25,0,.35)";
+    ctx.beginPath(); ctx.ellipse(this.ball.x + 4, Math.min(H-4, this.ball.y + r + 2 + k*18), r*1.1, r*0.45, 0, 0, Math.PI*2); ctx.fill();
+    SoccerKit.drawBallIcon(ctx, this.ball.x, this.ball.y, r, this.phase==="animating" ? t*14 : 0);
   }
 
-  _drawKeeper(){
+  _drawKeeper(t){
     const lean = this.phase!=="idle" ? (this.keeper.x - this.W/2) / (this.W/2) : 0; // -1..1
-    drawFootballer(this.ctx, {
-      x: this.keeper.x, y: this.keeper.y, s: 1,
-      shirt: this.keeperKit.shirt, trim: this.keeperKit.shorts,
-      pose: "keeper", lean,
-    });
+    const figH = 92;
+    // this.keeper tracks the keeper's body centre; the figure is drawn from the feet
+    SoccerKit.drawFigure(this.ctx, this.keeper.x, Math.min(this._goalBottom() + 4, this.keeper.y + figH*0.5), figH,
+      this.keeperKit, { skin:"#e3a97f", hair:"#1e1611" }, { pose:"keeper", lean: lean*0.95, seed:1 }, t);
   }
 }

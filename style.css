@@ -654,20 +654,22 @@ body{
 }
 
 .goal-toast{
-  position:fixed; top:40%; left:50%; transform:translate(-50%,-50%);
-  font-weight:900; font-size:clamp(40px, 14vw, 64px); color:var(--accent); letter-spacing:1px;
-  text-shadow:0 0 28px rgba(255,210,63,.85), 0 6px 18px rgba(0,0,0,.6);
-  -webkit-text-stroke:2px rgba(0,0,0,.35);
+  position:fixed; top:42%; left:50%; transform:translate(-50%,-50%) rotate(-2.5deg);
+  width:130vw; padding:10px 0; text-align:center;
+  font-family:Oswald, Rubik, sans-serif; font-weight:700; font-style:italic;
+  font-size:clamp(40px, 14vw, 64px); color:#fff; letter-spacing:1px;
+  -webkit-text-stroke:2px #111; paint-order:stroke fill; text-shadow:0 3px 0 #111;
+  background:linear-gradient(180deg,#7b7fd0,#5a5eb4);
+  border-block:4px solid #fff; box-shadow:0 0 0 3px #111, 0 12px 30px rgba(0,0,0,.45);
   pointer-events:none; z-index:40;
 }
 .goal-toast.hidden{display:none;}
-.goal-toast.show{animation:goalPop 1.3s cubic-bezier(.2,1.7,.4,1) both;}
+.goal-toast.show{animation:goalPop 1.3s cubic-bezier(.2,.8,.3,1) both;}
 @keyframes goalPop{
-  0%{transform:translate(-50%,-50%) scale(.4) rotate(-8deg); opacity:0;}
-  30%{transform:translate(-50%,-50%) scale(1.15) rotate(3deg); opacity:1;}
-  45%{transform:translate(-50%,-50%) scale(1) rotate(0); opacity:1;}
-  80%{opacity:1;}
-  100%{opacity:0; transform:translate(-50%,-50%) scale(1) rotate(0);}
+  0%{transform:translate(40%,-50%) rotate(-2.5deg); opacity:0;}
+  22%{transform:translate(-50%,-50%) rotate(-2.5deg); opacity:1;}
+  80%{opacity:1; transform:translate(-50%,-50%) rotate(-2.5deg);}
+  100%{opacity:0; transform:translate(-50%,-50%) rotate(-2.5deg);}
 }
 
 #dribble-canvas{
@@ -690,6 +692,52 @@ body{
 /* Particles / crowd handled on canvas */
 
 .hidden{display:none !important;}
+
+/* ===== Match situation (soccer-game house style) =====
+   Key moments cut to a full-bleed daylight pitch drawn on canvas by
+   js/pitch.js; the minigame sits over its lower part as a carbon panel with
+   glossy lime actions — the look of the situation screens, not the dark
+   proux shell around them. */
+.situation{position:fixed; inset:0; z-index:45; background:#3f931f; overflow:hidden;}
+.situation.hidden{display:none;}
+#situation-canvas{display:block; width:100%; height:100%; touch-action:none;}
+#situation-canvas.shake{animation:pitchShake .22s linear;}
+@keyframes pitchShake{
+  0%,100%{transform:translate(0,0);} 20%{transform:translate(-4px,2px);} 40%{transform:translate(3px,-3px);}
+  60%{transform:translate(-3px,-1px);} 80%{transform:translate(2px,3px);}
+}
+
+.minigame-overlay.on-pitch{
+  align-items:flex-end; background:linear-gradient(180deg,transparent 45%,rgba(0,20,0,.35));
+  backdrop-filter:none; padding:0 10px calc(10px + env(safe-area-inset-bottom));
+}
+.on-pitch .minigame-box{
+  position:relative; padding:14px 14px 16px; border-radius:22px; max-width:420px; width:100%;
+  background:
+    radial-gradient(circle at 25% 25%, rgba(255,255,255,.05) 0 2px, transparent 3px) 0 0/9px 9px,
+    radial-gradient(circle at 75% 75%, rgba(0,0,0,.35) 0 2px, transparent 3px) 0 0/9px 9px,
+    linear-gradient(180deg,#2b3036,#16191d);
+  border:2px solid #0b0d10;
+  box-shadow:0 0 0 2px rgba(255,255,255,.12) inset, 0 14px 40px rgba(0,0,0,.55);
+  animation:sheetUp .32s cubic-bezier(.2,.8,.3,1);
+}
+@keyframes sheetUp{from{transform:translateY(110%);} to{transform:translateY(0);}}
+.on-pitch #minigame-title{
+  font-family:Oswald, Rubik, sans-serif; font-weight:900; font-size:18px; font-style:italic;
+  color:#fff; text-shadow:0 2px 0 #000, 0 0 1px #000; margin:0 0 10px; letter-spacing:.2px;
+}
+.on-pitch #aim-canvas, .on-pitch #dribble-canvas{border:2px solid #0b0d10; border-radius:14px; box-shadow:0 0 0 2px rgba(255,255,255,.15);}
+.on-pitch .aim-hint{color:#dfe7d6; margin-top:10px; font-size:13px;}
+.on-pitch .timing-wrap{margin-bottom:14px;}
+.on-pitch .timing-track{background:#0b0d10; border-color:#444a52;}
+.on-pitch .timing-zone{background:rgba(140,230,40,.45); border-color:#b6f23a;}
+.on-pitch .timing-marker{background:#fff; box-shadow:0 0 10px rgba(255,255,255,.8);}
+.on-pitch .btn-primary{
+  color:#0d2a00; font-family:Oswald, Rubik, sans-serif; font-weight:900; font-style:italic; font-size:20px;
+  background:linear-gradient(180deg,#b8f55a 0%,#6fd21c 48%,#3f9a0c 100%);
+  border:2px solid #1c3d05; box-shadow:inset 0 2px 0 rgba(255,255,255,.55), 0 4px 0 #1c3d05, 0 8px 18px rgba(0,0,0,.4);
+}
+.on-pitch .btn-primary:active{transform:translateY(3px); box-shadow:inset 0 2px 0 rgba(255,255,255,.55), 0 1px 0 #1c3d05;}
 
 /* ===== Aim minigame ===== */
 #aim-canvas{
