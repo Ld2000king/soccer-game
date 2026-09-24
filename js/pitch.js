@@ -299,15 +299,25 @@
 
   // ---------- players ----------
   // Chunky, big-head, flat-shaded figure seen from above/front. Feet at (sx, sy).
-  function drawPlayer(ctx, cam, p, kit, t, look) {
+  function drawPlayer(ctx, cam, p, kit, t, look, sit) {
     const pt = cam.proj(p.x, p.y, 0);
     const H = 1.8 * cam.s * cam.hf * 1.45; // exaggerated size — players read as characters, not dots
-    drawFigure(ctx, pt.x, pt.y, H, kit, look, p, t);
+    let options = p;
+    if (sit && !p.view) {
+      // Turn toward the ball. An outfield ball carrier looks toward the goal.
+      const onBall = sit.ball && Math.hypot(p.x-sit.ball.x, p.y-sit.ball.y) < 2.4;
+      const target = onBall && p.role !== 'gk' ? cam.proj(34, 0) : sit.ball ? cam.proj(sit.ball.x, sit.ball.y) : pt;
+      const dx = target.x-pt.x, dy = target.y-pt.y;
+      const view = p.pose === 'celebrate' ? 'front' : Math.abs(dx)>Math.abs(dy)*1.6 ? 'side' : dy < -2 ? 'back' : 'front';
+      options = { ...p, view, facing: p.facing || (dx < -1 ? 'left' : 'right') };
+    }
+    drawFigure(ctx, pt.x, pt.y, H, kit, look, options, t);
   }
 
   // Screen-space figure, feet at (sx, sy), H px tall. Also used by the close-up minigames.
   // o: { pose, facing, lean (-1..1 sideways dive), seed, marker, call }
   function drawFigure(ctx, sx, sy, H, kit, look, o, t) {
+    if (global.ComicPlayers) return global.ComicPlayers.drawFigure(ctx, sx, sy, H, kit, look, o, t);
     kit = normKit(kit);
     look = look || { skin: PAL.skin[1], hair: PAL.hair[3] };
     const acc = look.acc || {};
@@ -485,6 +495,7 @@
   // Screen-space head centred on (hx, hy) with radius r. Outline width comes from r,
   // so a big preview and a tiny sprite match.
   function drawHead(ctx, hx, hy, r, look, face, t) {
+    if (global.ComicPlayers) return global.ComicPlayers.drawHead(ctx, hx, hy, r, look, face, t);
     const skin = look.skin || PAL.skin[1], hair = look.hair || PAL.hair[3], style = look.style || 'short';
     const acc = look.acc || {};
     ctx.save();
@@ -543,6 +554,7 @@
 
   // Head and shoulders in a box `size` px wide, resting on y = bottom. Used for the dashboard avatar.
   function drawBust(ctx, cx, bottom, size, kit, look, t) {
+    if (global.ComicPlayers) return global.ComicPlayers.drawBust(ctx, cx, bottom, size, kit, look, t);
     kit = normKit(kit);
     const acc = look.acc || {};
     const r = size * 0.27;
@@ -755,7 +767,7 @@
         // every other player gets a stable random look; yours arrives as p.look
         const rs = PAL.skin[(r() * PAL.skin.length) | 0], rh = PAL.hair[(r() * PAL.hair.length) | 0], rt = NPC_STYLES[(r() * NPC_STYLES.length) | 0];
         const look = p.look || { skin: p.skin || rs, hair: p.hair || rh, style: p.style || rt };
-        items.push({ y: cam.proj(p.x, p.y).y, draw: () => drawPlayer(ctx, cam, p, kit, t, look) });
+        items.push({ y: cam.proj(p.x, p.y).y, draw: () => drawPlayer(ctx, cam, p, kit, t, look, sit) });
       }
       if (sit.ball) items.push({ y: cam.proj(sit.ball.x, sit.ball.y).y + 0.1, draw: () => drawBall(ctx, cam, sit.ball, t) });
       items.sort((a, b) => a.y - b.y).forEach((i) => i.draw());

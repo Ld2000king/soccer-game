@@ -326,6 +326,13 @@ const SituationView = {
     });
   },
   wait(ms){ return new Promise(r=> setTimeout(r, ms)); },
+  async kick(player){
+    if(!window.ComicPlayers || !player || player.role === "gk") return;
+    player.pose = "kick";
+    player.kickStarted = (performance.now() - this.t0)/1000;
+    // Release the ball when the animated boot reaches the contact pose.
+    await this.wait(322);
+  },
 
   shake(){
     this.canvas.classList.remove("shake");
@@ -395,7 +402,7 @@ const SituationView = {
       const dive = detail ? zoneAt(detail.diveZone) : { x: success ? 34 - sgn*1.8 : gx };
       sit.markers.push({ type:"target", at:[shot.x, 0.8], r:0.9 });   // the spot you picked
       await runUp();
-      hero.pose = "idle";
+      await this.kick(hero);
       const kY = sit.keeper.y;
       if(detail && detail.blocked){
         this.tween(sit.keeper, { x: dive.x, lean: leanFor(dive.x) }, 520);
@@ -414,6 +421,7 @@ const SituationView = {
       }
     } else if(type==="pass"){
       const m = sit.mate;
+      await this.kick(hero);
       if(success){
         await this.tween(b, { x: m.x, y: m.y - 0.8, z: sit.keeper ? 1.6 : 0 }, 720, { arc: sit.keeper ? 3.2 : 2.2 });
         if(sit.keeper){
@@ -487,7 +495,7 @@ const SituationView = {
         // your delivery goes where you sent it; what happens to it is what the minigame showed
         const z = sit.cornerTargets[(detail && detail.zone) || "M"];
         const result = detail ? detail.result : (success ? "goal" : "cleared");
-        hero.pose = "run";
+        await this.kick(hero);
         await this.tween(b, { x:z.x, y:z.y, z:1.9 }, 900, { arc: 4.5 });
         hero.pose = "idle"; hero.marker = false;
         if(result==="goal"){
@@ -515,7 +523,7 @@ const SituationView = {
       } else {
         // theirs: it lands on you (or in front of your keeper) and the timing decides
         const land = gkRole ? { x: 34 + (Math.random()<0.5 ? -1 : 1)*0.8, y: 5.4 } : { x: hero.x, y: hero.y - 0.4 };
-        sit.taker.pose = "run";
+        await this.kick(sit.taker);
         await this.tween(b, { x:land.x, y:land.y, z:1.9 }, 900, { arc: 4.5 });
         sit.taker.pose = "idle";
         if(success){
@@ -546,7 +554,7 @@ const SituationView = {
       const shot = detail ? zoneAt(detail.shotZone) : { x: gx, z: 0.7 };
       const dive = detail ? zoneAt(detail.diveZone) : { x: success ? gx : 34 - sgn*1.8 };
       await runUp();
-      if(sit.attacker) sit.attacker.pose = "idle";
+      await this.kick(sit.attacker);
       if(detail && detail.blocked){
         this.tween(hero, { x: dive.x, lean: leanFor(dive.x) }, 470);
         await hitWall(shot.x);
